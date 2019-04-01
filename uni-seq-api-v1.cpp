@@ -42,8 +42,12 @@ struct recvData{
 	double data[11];
 };
 
+int sent_req = 0;
+int recv_req = 0;
+
 
 //functions
+int writeToFile(string a, int b, int c);
 int setAddrInfo(char const IP[]);
 int setSocketConnection();
 int sendRequest(short RequestCode = 0, char const Parameters[] = {}, int sizeParam = 0);
@@ -74,7 +78,7 @@ int main(int argc, char const *argv[]){
 
 	setAnchorPositions();
 
-
+	remove("Loops-n-hoops.csv");
 	//record tag positions from program input
 	if(argc == 2){
 
@@ -102,7 +106,7 @@ int main(int argc, char const *argv[]){
 	//close() the socket
 	close(sockfd);
 	freeaddrinfo(servinfo);
-
+	cout << "\n\nSent requests: " << sent_req << "\nReceived requests: " << recv_req << endl;
 	return 0;
 }
 
@@ -126,6 +130,8 @@ int sendRequest(short RequestCode, char const Parameters[], int sizeParam){
 	printf("%s\n\n", command);
 
 	cout << "Hashcode on return: " << Hashcode << "\n\n";
+
+	sent_req++;
 	return Hashcode;
 }
 
@@ -155,6 +161,8 @@ int recvResponse(int timeout_u, int hashcode){
 	int recv_hashcode;
 	auto start = chrono::high_resolution_clock::now();
 	auto finish = chrono::high_resolution_clock::now();
+
+	int i = 0, j = 0;
 	do{
 		do{
 			poll_res = poll(&sfd,1,timeout_u/1000);
@@ -164,10 +172,10 @@ int recvResponse(int timeout_u, int hashcode){
 				if(sfd.revents & POLLIN){
 				//recv() an answer from Sequitur
 					if(recv(sockfd, buffer, UDP_BUFFER_LENGTH-1, 0) == -1){
-						perror("recieve: error");
+						perror(": error");
 						return -1;
 					}
-					printf("Recieved message: %s\n", buffer);
+					printf("Received message: %s\n", buffer);
 				}
 				if(sfd.revents & POLLERR){
 					perror("poll: error");
@@ -175,19 +183,24 @@ int recvResponse(int timeout_u, int hashcode){
 				}
 			}
 			cout << "Poll loop condition is " << !(sfd.revents & POLLIN) << endl;
+			i++;
 		}while(!(sfd.revents & POLLIN));
-		//read received hashcode
-		sscanf(buffer,"{%d", &recv_hashcode);
-		cout << "\nSent hashcode:\t" << hashcode << "\nRecieved hashcode:\t" << recv_hashcode << "\n\n";
+
 		//initiate hashcode timeout
 		finish = chrono::high_resolution_clock::now();
-		getchar();
+		cout << "Receive latency (ms): " << double(chrono::duration_cast<chrono::microseconds>(finish-start).count())/1000 << endl;
+
+		//read received hashcode
+		sscanf(buffer,"{%d", &recv_hashcode);
+		cout << "\nSent hashcode:\t" << hashcode << "\nReceived hashcode:\t" << recv_hashcode << "\n\n";
+		j++;
 		//if(chrono::duration_cast<chrono::microseconds>(finish-start).count() > (10*timeout.tv_usec)) return -1;
 	} while(recv_hashcode != hashcode);
-
-
+  cout << "Poll loops: " << i << "\tHashcode loops: " << j << endl;
+	writeToFile("Loops-n-hoops.csv", i, j);
 	printf("%s\n\n", buffer); //print recived message
-
+	//getchar();
+	recv_req++;
 	return chrono::duration_cast<chrono::microseconds>(finish-start).count();
 }
 
@@ -280,7 +293,7 @@ int recordTagMovement(int state, int timer, double frequency){
 	char parameters[] = "0";
 	int sizeParam = strlen(parameters);
 	int hashcode;
-	int timeout_u = 100;
+	int timeout_u = 10*1000;
 	recvData resp;
 
 	//initialize file output
@@ -299,7 +312,7 @@ int recordTagMovement(int state, int timer, double frequency){
 	if(frequency == 0){
 		while(timer > difftime(time(&curtime),time0)){
 
-			//send and recieve the UDP packet
+			//send and receive the UDP packet
 			if((hashcode = sendRequest(CLIENT_GET_TAG_POSITION, parameters, sizeParam)) == -1) continue;
 			if((prcss_time = recvResponse(timeout_u, hashcode)) == -1) continue;
 
@@ -322,7 +335,7 @@ int recordTagMovement(int state, int timer, double frequency){
 			//start frequency correction timer
 			start = chrono::high_resolution_clock::now();
 
-			//send and recieve the UDP packet
+			//send and receive the UDP packet
 			if((hashcode = sendRequest(CLIENT_GET_TAG_POSITION, parameters, sizeParam)) == -1) continue;
 			if((prcss_time = recvResponse(timeout_u, hashcode)) == -1) continue;
 
@@ -362,6 +375,7 @@ int setAnchorPositions(){
 															"2 1 10205F1310001423 2.542345 2.645767 2.1514",
 															"3 1 10205F1310001422 -2.469393 -1.541162 2.145",
 															"4 1 10205F1310001425 2.550327 -1.541984 0.705067"};
+  cout << "\n\n-------------------------" << endl;
 	for(int i = 0; i < 4; i++){
 		hashcode = sendRequest(CLIENT_SET_ANCHOR_INFO, parameters[i], strlen(parameters[i]));
 		do{
@@ -375,9 +389,18 @@ int setAnchorPositions(){
 			}
 			errorcode = resp.info[1];
 
+			cout << "-------------------------" << endl;
 		}while(errorcode != 0);
 	}
 	printf("\n\nAnchor Positions are all set!\n\n");
 	getchar();
+	return 0;
+}
+
+int writeToFile(string a, int b, int c){
+	ofstream file;
+	file.open(a,ios_base::app);
+	file << b << ";" << c << endl;
+	file.close();
 	return 0;
 }

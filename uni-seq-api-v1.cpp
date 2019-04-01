@@ -172,7 +172,7 @@ int recvResponse(int timeout_u, int hashcode){
 				if(sfd.revents & POLLIN){
 				//recv() an answer from Sequitur
 					if(recv(sockfd, buffer, UDP_BUFFER_LENGTH-1, 0) == -1){
-						perror(": error");
+						perror("receive: error");
 						return -1;
 					}
 					printf("Received message: %s\n", buffer);

@@ -60,7 +60,7 @@ int set_connection(const char ip[], const char port[], int family = AF_INET, int
     return 0;
 }
 
-int send_request(request x){
+int send_request(Seq_Request x){
 	//form a request
 	hashcode = rand() % 9000 + 1000;
     sprintf(buffer, "{%d %d %s}", hashcode, x.get_code(), x.get_parameters());
@@ -116,8 +116,7 @@ int check_hashtag(){
 
 //main
 int main() {
-    Seq_Request req0;
-    req0.set("0",14);
+    Seq_Request req0(0);
     if(set_connection("192.168.2.105", PORT_SEQUITUR)) return 0;
     if(send_request(req0)) return 0;
     if(recv_response(10)) return 0;

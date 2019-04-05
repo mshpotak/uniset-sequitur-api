@@ -57,26 +57,3 @@ class sqtr_request{
         //help request: ask for request list
         //void help
 };
-
-int main()
-{
-    sqtr_request ping1,ping2;
-    int code;
-    string parameters;
-    while(1)
-    {
-        cout << "Enter the request code: ";
-        cin >> code;
-        cin.ignore();
-        cout << "Enter the request parameters: ";
-        getline(cin, parameters);
-        cout << endl;
-        cout << "Code: " << code << "\tParameters:" << parameters << endl;
-
-        scout << "Advanced function test: " << endl;
-        cout << ping1.advanced(code, parameters) << endl;
-        cout << "Guided function test: " << endl;
-        cout << ping2.guided(code) << "\n\n";
-    }
-    return 0;
-}

@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <poll.h>
 
 #include <string>
 #include <cstring>
@@ -15,6 +16,8 @@
 
 #include <errno.h>
 
+#include "seqreqclass.hpp"
+
 
 #define PORT_SEQUITUR "5678"
 #define UDP_BUFFER_LENGTH 256
@@ -27,24 +30,8 @@ char buffer[UDP_BUFFER_LENGTH];
 int sock_fd = -1;
 int hashcode = -1;
 
-//classes
-struct request{
-        int code;
-        char parameters[];
-        int parameters_size;
-};
-
-request req0;
-    req0.code = 0;
-    req0.parameeters = "0";
-    req0.parameters_size = sizeof(req0.parameters);
-
 //functions
-int set_connection(const char ip[],
-                 const char port[],
-                 int family = AF_INET,
-                 int socktype = SOCK_DGRAM,
-                 int flags = AI_PASSIVE){
+int set_connection(const char ip[], const char port[], int family = AF_INET, int socktype = SOCK_DGRAM, int flags = AI_PASSIVE){
 
     struct addrinfo hints;
     struct addrinfo *servinfo;
@@ -73,27 +60,27 @@ int set_connection(const char ip[],
     return 0;
 }
 
-int send_request(int request_code, char parameters[], int size_parameters){
-
+int send_request(request x){
 	//form a request
 	hashcode = rand() % 9000 + 1000;
-    sprintf(buffer, "{%d %d %s}", hashcode, request_code, parameters);
+    sprintf(buffer, "{%d %d %s}", hashcode, x.get_code(), x.get_parameters());
 
 	//send() a request to Sequitur
-	if(send(sockfd, buffer, UDP_BUFFER_SIZE, 0) == -1){
+	if(send(sock_fd, buffer, UDP_BUFFER_SIZE, 0) == -1){
 		perror("send error: ");
 		return 1;
 	}
 
-	cout << "Request sent...\n" << command << endl;
+	cout << "Request sent...\n" << buffer << endl;
 	return 0;
 }
 
 int recv_response(int timeout_ms){
 
     //initialize poll() variables
+    int poll_res = 0;
     struct pollfd sfd;
-    sfd.fd = sockfd;
+    sfd.fd = sock_fd;
     sfd.events = POLLIN;
 
     //wait until data is available
@@ -107,7 +94,7 @@ int recv_response(int timeout_ms){
             }
             //recv() if data is available
             if(sfd.revents & POLLIN){
-                if(recv(sockfd, buffer, UDP_BUFFER_SIZE, 0) == -1){
+                if(recv(sock_fd, buffer, UDP_BUFFER_SIZE, 0) == -1){
                     perror("receive error:");
                     return -1;
                 }
@@ -126,10 +113,13 @@ int check_hashtag(){
 }
 
 
+
 //main
 int main() {
+    Seq_Request req0;
+    req0.set("0",14);
     if(set_connection("192.168.2.105", PORT_SEQUITUR)) return 0;
-    if(send_request(req0.code, req0.parameters, req0.parameters_size)) return 0;
+    if(send_request(req0)) return 0;
     if(recv_response(10)) return 0;
     return 0;
 }

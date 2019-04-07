@@ -85,11 +85,14 @@ int recv_response(int timeout_ms){
 
     //wait until data is available
     do{
-        poll_res = poll(&sfd,1, timeout_ms);
+        if((poll_res = poll(&sfd, 1, timeout_ms)) == -1){
+            perror("poll error:");
+            continue;
+        };
         if(poll_res > 0){
             //check for error
             if(sfd.revents & POLLERR){
-                perror("poll error:");
+                perror("poll revents error:");
                 continue;
             }
             //recv() if data is available

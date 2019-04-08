@@ -115,13 +115,64 @@ int check_hashtag(){
     return 0;
 }
 
+int ping_test(){
+    Seq_Request req0(0);
+    if(set_connection("192.168.2.105", PORT_SEQUITUR) != 0) return 0;
+    if(send_request(req0) != 0) return 0;
+    if(recv_response(10) != 0) return 0;
+    return 0;
+}
 
+// void input_check(int argc, const char* argv[]){
+//     string user_input;
+//
+//     //c-string
+//     if(argc > 1){
+//         if(argv[1][0] == '-'){
+//             switch(argv[1][1]){
+//                 case 'u':
+//                     cout << "\n--USER MODE--\n" << endl;
+//                     cout << "Input request code and its parameters: " << endl;
+//                     getline(cin, user_input);
+//                     cout << "\n-- INPUT COMPLETE --\n" << endl;
+//                     break;
+//                 case 'r':
+//
+//                     continue;
+//
+//                     break
+//                 default
+//
+//                 break
+//             }
+//         }
+//     }
+//     cout << "\nUser input: " << endl;
+//     cout << user_input << endl;
+//     cout << "-- INPUT COMPLETE --\n" << endl;
+// }
 
 //main
-int main() {
-    Seq_Request req0(0);
-    if(set_connection("192.168.2.105", PORT_SEQUITUR)) return 0;
-    if(send_request(req0)) return 0;
-    if(recv_response(10)) return 0;
+int main(int argc, const char* argv[]) {
+    Seq_Request ForwardDataEnable(3, "positionforwardenabled 1 1 0");
+
+    if(set_connection("192.168.2.105", PORT_SEQUITUR) != 0) return 0;
+    if(send_request(ForwardDataEnable) != 0) return 0;
+    if(recv_response(10) != 0) goto ending;
+
+
+    int file_fd;
+    if((file_fd = open("Output.csv", (O_RDWR|O_CREAT|O_TRUNC), 0644)) == -1) goto ending;
+    char * data;
+
+    data = strtok(buffer, " {}");
+    while(data != NULL){
+        if(write(file_fd,(const char*)data, strlen(data))) == -1) break;
+        data = strtok (NULL, " {}");
+    }
+
+    ending:
+    Seq_Request ForwardDataDisable(3, "positionforwardenabled 0 1 0");
+    if(send_request(ForwardDataDisable) != 0) return 0;
     return 0;
 }

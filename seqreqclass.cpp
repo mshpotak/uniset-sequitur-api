@@ -2,20 +2,23 @@
 
 
 Seq_Request::Seq_Request(int user_code){
-    code = user_code;
-    switch(code){
-        case CLIENT_PING:
-            set("0", 0);
+    switch(user_code){
+        case 0:
+            set("0", CLIENT_PING);
             break;
-        case CLIENT_SET_PARAMETER:
-            set("dataforwardenabled 1 1 0", 3);
+        case 3:
+            set("positionforwardenabled 1 1 0", CLIENT_SET_PARAMETER);
             break;
-        case CLIENT_GET_TAG_POSITION:
-            set("0", 14);
+        case 14:
+            set("0", CLIENT_GET_TAG_POSITION);
             break;
         default:
             std::cout << "Invalid request code" << std::endl;
     }
+}
+
+Seq_Request::Seq_Request(int user_code, string user_parameters){
+    set(user_parameters, user_code);
 }
 
 int Seq_Request::get_code(){

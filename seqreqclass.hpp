@@ -14,6 +14,7 @@
 #define CLIENT_GET_ANCHOR_INFO 10
 #define CLIENT_SET_ANCHOR_INFO 11
 #define CLIENT_GET_TAG_POSITION 14
+#define CLIENT_POSITION_FORWARD 59
 
 class Seq_Request{
     private:

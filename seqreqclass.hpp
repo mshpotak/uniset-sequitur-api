@@ -5,6 +5,16 @@
 #ifndef SEQREQCLASS_HPP_
 #define SEQREQCLASS_HPP_
 
+#define CLIENT_PING 0
+#define CLIENT_SET_PARAMETER 3
+#define CLIENT_GET_SENSORS 51
+#define CLIENT_GET_RANGE 50
+#define CLIENT_SCAN 56
+#define CLIENT_SEND_DATA 57
+#define CLIENT_GET_ANCHOR_INFO 10
+#define CLIENT_SET_ANCHOR_INFO 11
+#define CLIENT_GET_TAG_POSITION 14
+
 class Seq_Request{
     private:
         int code;

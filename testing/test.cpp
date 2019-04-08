@@ -2,34 +2,50 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstring>
+#include <poll.h>
+#include <unistd.h>
+
 
 using namespace std;
 
 int main()
 {
-    int argn = 4;
-    string x = "14 0 1 1";
-    string y = "0";
-    size_t pos1, pos2 = 0, found = 0;
+    char buffer[128];
+    int buffer_size = 128;
+    char* new_buffer;
+    int bytes_rd;
+    int timeout_ms = 5000;
+    int poll_res = 0;
+    struct pollfd sfd;
+    sfd.fd = STDIN_FILENO;
+    sfd.events = POLLIN;
 
-    // cout << x << "\t" << x.size() << endl;
-    // if(argn == 1){
-    //     found = x.find(" ");
-    //     pos1 = 0;
-    //     pos2 = found;
-    //     x.replace(pos1, pos2, y);
-    // }
-    cout << x << "\t" << x.size() << endl;
+    while(1){
+        memset(buffer, 0, buffer_size);
+        if((poll_res = poll(&sfd, 1, timeout_ms)) == -1){
+            perror("poll error:");
+            continue;
+        };
+        if(poll_res > 0){
 
-
-    for(int i = 0; i < argn; i++, pos1++){
-        found = x.find(" ", found+1);
-        pos1 = pos2;
-        pos2 = found;
+            //check for error
+            if(sfd.revents & POLLERR){
+                perror("poll revents error:");
+                continue;
+            }
+            //recv() if data is available
+            if(sfd.revents & POLLIN){
+                bytes_rd = read(STDIN_FILENO, buffer, buffer_size);
+                cout << "BYTES READ: " << bytes_rd << endl;
+                if(bytes_rd == 1) new_buffer = new char[bytes_rd];
+                else new_buffer = new char[bytes_rd-1];
+                new_buffer = buffer;
+                if(buffer[0] == '\n') printf("You pressed ENTER.\n");
+                printf("\nTYPED: '%s' END\n", buffer);
+                cout << "\nTYPED: '" << new_buffer << "' END" << endl;
+            }
+        }
     }
-
-    x.replace(pos1, pos2-pos1, y);
-    cout << x << "\t" << x.size() << endl;
 
     return 0;
 }

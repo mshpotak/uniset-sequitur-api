@@ -161,15 +161,15 @@ int main(int argc, const char* argv[]) {
     if(recv_response(10) != 0) goto ending;
 
 
-    int file_fd;
-    if((file_fd = open("Output.csv", (O_RDWR|O_CREAT|O_TRUNC), 0644)) == -1) goto ending;
-    char * data;
+    ofsteam file;
+    file.open("Output.csv");
 
-    data = strtok(buffer, " {}");
-    while(data != NULL){
-        if(write(file_fd,(const char*)data, strlen(data))) == -1) break;
-        data = strtok (NULL, " {}");
-    }
+    char* substr;
+    string data;
+    char new_buffer[256];
+
+    sscanf(buffer,"{%*d %*d %*d %[^_}]", &buffer);
+
 
     ending:
     Seq_Request ForwardDataDisable(3, "positionforwardenabled 0 1 0");

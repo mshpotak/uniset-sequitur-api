@@ -22,12 +22,14 @@ class Seq_Request{
         std::string parameters;
     public:
         Seq_Request(int user_code);
+        Seq_Request(int user_code, std::string user_parameters);
         int get_code();
         const char* get_parameters();
         int get_size();
         void set(std::string user_parameters, int user_code);
         //parameter number from SEQUITUR manual
         void set_parameter(int parameter_number, std::string user_parameter);
+        void set_parameters(std::string user_parameters);
 };
 
 #endif

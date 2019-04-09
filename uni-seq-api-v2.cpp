@@ -16,17 +16,19 @@
 
 #include <errno.h>
 
+#include <chrono>
+
 #include "seqreqclass.hpp"
 
 
 #define PORT_SEQUITUR "5678"
-#define UDP_BUFFER_LENGTH 256
-#define UDP_BUFFER_SIZE 255
+#define UDP_BUFFER_SIZE 1024
 
 using namespace std;
+using namespace std::chrono;
 
 //variables
-char buffer[UDP_BUFFER_LENGTH];
+char buffer[UDP_BUFFER_SIZE];
 int sock_fd = -1;
 int hashcode = -1;
 
@@ -152,27 +154,61 @@ int ping_test(){
 //     cout << "-- INPUT COMPLETE --\n" << endl;
 // }
 
+// enter check
+int pressed_enter(){
+    char buffer;
+    int poll_res = 0;
+
+    struct pollfd sfd;
+    sfd.fd = STDIN_FILENO;
+    sfd.events = POLLIN;
+
+    while(1){
+        memset(&buffer, 0, sizeof(buffer));
+        if((poll_res = poll(&sfd, 1, 0)) == -1){
+            continue;
+        };
+        if(poll_res > 0){
+            //check for error
+            if(sfd.revents & POLLERR){
+                continue;
+            }
+            //recv() if data is available
+            if(sfd.revents & POLLIN){
+                read(STDIN_FILENO, &buffer, sizeof(char));
+                if(buffer == '\n') return 0;
+                else return 1;
+            }
+        } else {
+            return 1;
+        }
+    }
+}
+
 //main
 int main(int argc, const char* argv[]) {
-    Seq_Request ForwardDataEnable(3, "positionforwardenabled 1 1 0");
 
-    if(set_connection("192.168.2.105", PORT_SEQUITUR) != 0) return 0;
-    if(send_request(ForwardDataEnable) != 0) return 0;
-    if(recv_response(10) != 0) goto ending;
-
-
-    ofsteam file;
+    ofstream file;
     file.open("Output.csv");
 
-    char* substr;
-    string data;
-    char new_buffer[256];
 
-    sscanf(buffer,"{%*d %*d %*d %[^_}]", &buffer);
+    Seq_Request ForwardPosEnable(3, "positionforwardenabled 1 1 0");
 
+    if(set_connection("192.168.2.105", PORT_SEQUITUR) != 0) return 0;
+    if(send_request(ForwardPosEnable) != 0) return 0;
+    if(recv_response(1000) != 0) goto ending;
+    cout << "PASS!" << endl;
+    getchar();
+
+    do{
+        memset(buffer, 0, UDP_BUFFER_SIZE);
+        if(recv_response(0) != 0) continue;
+        sscanf(buffer,"{%*d %*d %*d %[^_}]", buffer);
+        file << buffer << endl;
+    }while(pressed_enter());
 
     ending:
-    Seq_Request ForwardDataDisable(3, "positionforwardenabled 0 1 0");
-    if(send_request(ForwardDataDisable) != 0) return 0;
+    Seq_Request ForwardPosDisable(3, "positionforwardenabled 0 1 0");
+    if(send_request(ForwardPosDisable) != 0) return 0;
     return 0;
 }

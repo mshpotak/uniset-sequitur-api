@@ -17,7 +17,7 @@ Seq_Request::Seq_Request(int user_code){
     }
 }
 
-Seq_Request::Seq_Request(int user_code, string user_parameters){
+Seq_Request::Seq_Request(int user_code, std::string user_parameters){
     set(user_parameters, user_code);
 }
 

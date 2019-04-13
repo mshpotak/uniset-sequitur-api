@@ -1,2 +1,2 @@
 # uniset-sequitur-api
-UNISET Sequitur API for desting and data recording.
+UNISET Sequitur API for testing and data recording.

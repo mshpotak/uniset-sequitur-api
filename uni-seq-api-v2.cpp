@@ -201,13 +201,14 @@ int main(int argc, const char* argv[]) {
     getchar();
 
     do{
+        printf("\033c");
         memset(buffer, 0, UDP_BUFFER_SIZE);
         if(recv_response(0) != 0) continue;
         sscanf(buffer,"{%*d %*d %*d %[^_}]", buffer);
         file << buffer << endl;
     }while(pressed_enter());
 
-    ending:
+    ending:;
     Seq_Request ForwardPosDisable(3, "positionforwardenabled 0 1 0");
     if(send_request(ForwardPosDisable) != 0) return 0;
     return 0;

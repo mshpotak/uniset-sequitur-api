@@ -1,6 +1,8 @@
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #ifndef SEQREQCLASSV2_HPP_
 #define SEQREQCLASSV2_HPP_
@@ -15,6 +17,53 @@
 #define CLIENT_SET_ANCHOR_INFO 11
 #define CLIENT_GET_TAG_POSITION 14
 #define CLIENT_POSITION_FORWARD 59
+
+#define BUFF_SIZE 1024
+
+class Sequitur{
+    private:
+        int sock_fd;
+        std::string parameters;
+
+
+    public:
+        Sequitur();
+        ~Sequitur();
+
+        void connect_to(const char ip[],
+                        const char port[],
+                        int family = AF_INET,
+                        int socktype = SOCK_DGRAM,
+                        int flags = AI_PASSIVE);
+
+        void send_request();
+        void recv_reply();
+
+        struct reply{
+            double timestamp;
+
+            struct accel{
+                double x;
+                double y;
+                double z;
+            } accel;
+
+            struct gyro{
+                double x;
+                double y;
+                double z;
+            } gyro;
+
+            struct mag{
+                double x;
+                double y;
+                double z;
+            } mag;
+
+        };
+}
+
+
 
 class Seq_Request{
     private:

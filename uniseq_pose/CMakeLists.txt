@@ -198,7 +198,7 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable( uniseq_pose src/uniseq_pose.cpp )
+add_executable( uniseq_pose src/uniseq_pose.cpp src/seq-req-class-v2.cpp)
 target_link_libraries( uniseq_pose ${catkin_LIBRARIES} )
 
 add_executable( uniseq_listen src/uniseq_listen.cpp )

@@ -23,6 +23,7 @@
 #define CLIENT_POSITION_FORWARD 59
 
 #define BUFF_SIZE 1024
+#define PORT_SEQ  "5678"
 
 struct xyz{
     double x;
@@ -60,6 +61,7 @@ class Sequitur: public Network{
         int hashcode;
         std::string msg;
     public:
+        Sequitur();
         void compose_msg();
         void decompose_msg();
         void send_req();

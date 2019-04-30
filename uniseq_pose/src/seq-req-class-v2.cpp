@@ -82,6 +82,13 @@ int Network::recv_msg(){
 
 //Sequitur class definition
 
+Sequitur::Sequitur(){
+    string ip;
+    std::cout << "Enter the IP address:\n";
+    std::cin >> ip;
+    connect_to( ip.c_str(), PORT_SEQ );
+}
+
 void Sequitur::compose_msg(){
     hashcode = rand() % 9000 + 1000;
 

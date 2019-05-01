@@ -83,7 +83,7 @@ int Network::recv_msg(){
 //Sequitur class definition
 
 Sequitur::Sequitur(){
-    string ip;
+    std::string ip;
     std::cout << "Enter the IP address:\n";
     std::cin >> ip;
     connect_to( ip.c_str(), PORT_SEQ );

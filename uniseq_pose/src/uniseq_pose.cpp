@@ -4,12 +4,12 @@
 
 #include <sstream>
 
-void msg_conv( pose_stamped a, geometry_msgs::PoseStamped b){
-    b.pose.position.x = a.position.x;
-    b.pose.position.y = a.position.y;
-    b.pose.position.z = a.position.z;
+void msg_conv( pose_stamped a, geometry_msgs::PoseStamped *b){
+    b->pose.position.x = a.position.x;
+    b->pose.position.y = a.position.y;
+    b->pose.position.z = a.position.z;
     ros::Time stamp(a.timestamp/1000);
-    b.header.stamp = stamp;
+    b->header.stamp = stamp;
 }
 
 int main( int argc, char *argv[]){
@@ -24,7 +24,7 @@ int main( int argc, char *argv[]){
 
         fwd.recv_upd();
         msg.header.seq = count;
-        msg_conv( fwd.pose, msg );
+        msg_conv( fwd.pose, &msg );
 
         ROS_INFO("count = %d:\tx = %f\ty = %f\tz = %f", msg.header.seq, msg.pose.position.x, msg.pose.position.y, msg.pose.position.z );
         pose_pub.publish(msg);

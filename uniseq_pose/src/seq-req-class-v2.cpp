@@ -150,3 +150,33 @@ void Forward::recv_upd(){
     pose.gyro.x >> pose.gyro.y >> pose.gyro.z >>
     pose.mag.x >> pose.mag.y >> pose.mag.z;
 }
+
+GetPose::GetPose(){
+    set_req(3, "positionforwardenabled 0 1 0");
+    req_once();
+}
+
+void GetPose::get_upd(){
+    set_req(14, "0");
+    req_once();
+    //std::cout << msg << std::endl;
+
+    int skip;
+    std::stringstream ss;
+    ss << msg;
+    ss >> skip >> skip >> pose.timestamp >>
+    pose.position.x >> pose.position.y >> pose.position.z >>
+    pose.conf.x >> pose.conf.y >> pose.conf.z;
+    ss.str("");
+
+    set_req(51);
+    req_once();
+    //std::cout << msg << std::endl;
+
+    ss << msg;
+    ss >> skip >> skip >> imu.timestamp >>
+    imu.accel.x >> imu.accel.y >> imu.accel.z >>
+    imu.gyro.x >> imu.gyro.y >> imu.gyro.z >>
+    imu.mag.x >> imu.mag.y >> imu.mag.z;
+    ss.str("");
+}

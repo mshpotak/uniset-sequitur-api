@@ -31,7 +31,20 @@ struct xyz{
     double z;
 };
 
-struct pose_stamped{
+struct imu{
+    double timestamp;
+    struct xyz accel;
+    struct xyz gyro;
+    struct xyz mag;
+};
+
+struct pose{
+    double timestamp;
+    struct xyz position;
+    struct xyz conf;
+};
+
+struct pose_with_imu{
     double timestamp;
     struct xyz position;
     struct xyz posconf;
@@ -67,15 +80,23 @@ class Sequitur: public Network{
         void send_req();
         void recv_resp();
         void req_once();
-        void set_req( int user_code, std::string user_parameters );
+        void set_req( int user_code, std::string user_parameters = " " );
 };
 
 class Forward: public Sequitur{
     public:
         Forward();
         ~Forward();
-        struct pose_stamped pose;
+        struct pose_with_imu pose;
         void recv_upd();
+};
+
+class GetPose: public Sequitur{
+    public:
+        GetPose();
+        struct pose pose;
+        struct imu imu;
+        void get_upd();
 };
 
 #endif

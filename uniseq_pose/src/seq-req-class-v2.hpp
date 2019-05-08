@@ -90,13 +90,4 @@ class Forward: public Sequitur{
         struct pose_with_imu pose;
         void recv_upd();
 };
-
-class GetPose: public Sequitur{
-    public:
-        GetPose();
-        struct pose pose;
-        struct imu imu;
-        void get_upd();
-};
-
 #endif

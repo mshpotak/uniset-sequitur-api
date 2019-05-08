@@ -103,24 +103,37 @@ void Sequitur::decompose_msg(){
     msg = buffer;
     msg.erase( msg.begin() + msg.find('{') );
     msg.erase( msg.begin() + msg.find('}') );
+    if( req_code == CLIENT_POSITION_FORWARD ){
+        std::stringstream ss;
+        ss << msg;
+        ss >> result >> result >> result >> pose.timestamp >>
+        pose.position.x >> pose.position.y >> pose.position.z >>
+        pose.posconf.x >> pose.posconf.y >> pose.posconf.z >>
+        result >>
+        pose.accel.x >> pose.accel.y >> pose.accel.z >>
+        pose.gyro.x >> pose.gyro.y >> pose.gyro.z >>
+        pose.mag.x >> pose.mag.y >> pose.mag.z;
+    }
 }
-
-void Sequitur::send_req(){
-    compose_msg();
-    send_msg( msg.c_str() );
-};
-void Sequitur::recv_resp(){
-    await();
-    recv_msg();
-    decompose_msg();
-};
 
 void Sequitur::req_once(){
-    send_req();
-    recv_resp();
+    compose_msg();
+    if( send_msg( msg.c_str() ) != 0 ){
+        req_once();
+        return;
+    }
+    if( await() != 0 ){
+        req_once();
+        return;
+    }
+    if( recv_msg() != 0 ){
+        req_once();
+        return;
+    }
+    decompose_msg();
 }
 
-void Sequitur::set_req(int user_code, std::string user_parameters ){
+void Sequitur::set_req( int user_code, std::string user_parameters ){
     req_code = user_code;
     req_parameters = user_parameters;
 }
@@ -128,55 +141,18 @@ void Sequitur::set_req(int user_code, std::string user_parameters ){
 //Forward class definition
 
 Forward::Forward(){
-    set_req(3, "positionforwardenabled 1 1 0");
+    set_req( CLIENT_SET_PARAMETER, "positionforwardenabled 1 1 0" );
     req_once();
+    set_req( CLIENT_POSITION_FORWARD )
 }
 
 Forward::~Forward(){
-    set_req(3, "positionforwardenabled 0 1 0");
+    set_req( CLIENT_SET_PARAMETER, "positionforwardenabled 0 1 0" );
     req_once();
 }
 
 void Forward::recv_upd(){
-    int skip;
-    recv_resp();
-    std::stringstream ss;
-    ss << msg;
-    ss >> skip >> skip >> skip >> pose.timestamp >>
-    pose.position.x >> pose.position.y >> pose.position.z >>
-    pose.posconf.x >> pose.posconf.y >> pose.posconf.z >>
-    skip >>
-    pose.accel.x >> pose.accel.y >> pose.accel.z >>
-    pose.gyro.x >> pose.gyro.y >> pose.gyro.z >>
-    pose.mag.x >> pose.mag.y >> pose.mag.z;
-}
-
-GetPose::GetPose(){
-    set_req(3, "positionforwardenabled 0 1 0");
-    req_once();
-}
-
-void GetPose::get_upd(){
-    set_req(14, "0");
-    req_once();
-    //std::cout << msg << std::endl;
-
-    int skip;
-    std::stringstream ss;
-    ss << msg;
-    ss >> skip >> skip >> pose.timestamp >>
-    pose.position.x >> pose.position.y >> pose.position.z >>
-    pose.conf.x >> pose.conf.y >> pose.conf.z;
-    ss.str("");
-
-    set_req(51);
-    req_once();
-    //std::cout << msg << std::endl;
-
-    ss << msg;
-    ss >> skip >> skip >> imu.timestamp >>
-    imu.accel.x >> imu.accel.y >> imu.accel.z >>
-    imu.gyro.x >> imu.gyro.y >> imu.gyro.z >>
-    imu.mag.x >> imu.mag.y >> imu.mag.z;
-    ss.str("");
+    await(0);
+    recv_msg();
+    decompose_msg();
 }

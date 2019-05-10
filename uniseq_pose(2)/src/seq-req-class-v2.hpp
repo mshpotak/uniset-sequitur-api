@@ -21,6 +21,8 @@
 #define CLIENT_SET_ANCHOR_INFO 11
 #define CLIENT_GET_TAG_POSITION 14
 #define CLIENT_POSITION_FORWARD 59
+#define VALID_POSITION 2
+#define OUTOFDATE_POSITION 3
 
 #define BUFF_SIZE 1024
 #define PORT_SEQ  "5678"
@@ -92,10 +94,12 @@ class Forward: public Sequitur{
         ~Forward();
         struct pose_with_imu pose;
         void recv_upd();
+        void decompose_msg();
 };
 
 class GetPose: public Sequitur{
     public:
+        int pose_valid = OUTOFDATE_POSITION;
         GetPose();
         struct pose pose;
         struct pose pose_old;

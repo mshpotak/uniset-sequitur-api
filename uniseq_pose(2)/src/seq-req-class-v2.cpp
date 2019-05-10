@@ -161,14 +161,17 @@ Forward::~Forward(){
 }
 
 void Forward::recv_upd(){
-    int skip;
     recv_resp();
+}
+
+void Forward::decompose_msg(){
+    Sequitur::decompose_msg();
     std::stringstream ss;
     ss << msg;
-    ss >> skip >> skip >> skip >> pose.timestamp >>
+    ss >> result >> result >> result >> pose.timestamp >>
     pose.position.x >> pose.position.y >> pose.position.z >>
     pose.posconf.x >> pose.posconf.y >> pose.posconf.z >>
-    skip >>
+    result >>
     pose.accel.x >> pose.accel.y >> pose.accel.z >>
     pose.gyro.x >> pose.gyro.y >> pose.gyro.z >>
     pose.mag.x >> pose.mag.y >> pose.mag.z;
@@ -180,16 +183,37 @@ GetPose::GetPose(){
 }
 
 void GetPose::get_upd(){
-    set_req( CLIENT_GET_TAG_POSITION, "0" );
-    req_once();
-    //std::cout << msg << std::endl;
-
-
-    set_req( CLIENT_GET_SENSORS );
-    req_once();
-    //std::cout << msg << std::endl;
-
-
+    bool pose_b = false, imu_b = false;
+    do{
+        std::cout << "1" << std::endl;
+        if( pose_b != true ){
+            set_req( CLIENT_GET_TAG_POSITION, "0" );
+            req_once();
+            if( pose_valid == OUTOFDATE_POSITION ){
+                pose_b = true;
+            }
+            std::cout << "11" << std::endl;
+            if( !(pose == pose_old) ){
+                std::cout << "111" << std::endl;
+                pose_old = pose;
+                pose_b = true;
+            }
+        }
+        std::cout << "2" << std::endl;
+        if( imu_b != true ){
+            set_req( CLIENT_GET_SENSORS );
+            req_once();
+            std::cout << "22" << std::endl;
+            if( !(imu == imu_old) ){
+                std::cout << "222" << std::endl;
+                imu_old = imu;
+                imu_b = true;
+            }
+        }
+        std::cout << "3" << std::endl;
+    } while ( !(pose_b && imu_b) );
+    pose = pose_old;
+    imu = imu_old;
 }
 
 void GetPose::decompose_msg(){
@@ -197,7 +221,7 @@ void GetPose::decompose_msg(){
     if( req_code == CLIENT_GET_TAG_POSITION ){
         std::stringstream ss;
         ss << msg;
-        ss >> result >> result >> pose.timestamp >>
+        ss >> result >> pose_valid >> pose.timestamp >>
         pose.position.x >> pose.position.y >> pose.position.z >>
         pose.conf.x >> pose.conf.y >> pose.conf.z;
     }

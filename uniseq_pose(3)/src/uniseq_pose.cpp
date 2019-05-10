@@ -4,6 +4,9 @@
 #include "sensor_msgs/MagneticField.h"
 #include "seq-req-class-v2.hpp"
 #include "attitude_estimator.h"
+#include <math.h>
+
+using namespace stateestimation;
 
 void msg_conv( pose_with_imu a, geometry_msgs::PoseStamped *b, geometry_msgs::AccelStamped *c, sensor_msgs::MagneticField *d){
     ros::Time stamp(a.timestamp/1000);
@@ -18,9 +21,9 @@ void msg_conv( pose_with_imu a, geometry_msgs::PoseStamped *b, geometry_msgs::Ac
     c->accel.linear.x = a.accel.x;
     c->accel.linear.y = a.accel.y;
     c->accel.linear.z = a.accel.z;
-    c->accel.angular.x = a.gyro.x*PI/180;
-    c->accel.angular.y = a.gyro.y*PI/180;
-    c->accel.angular.z = a.gyro.z*PI/180;
+    c->accel.angular.x = a.gyro.x*M_PI/180;
+    c->accel.angular.y = a.gyro.y*M_PI/180;
+    c->accel.angular.z = a.gyro.z*M_PI/180;
 
     d->magnetic_field.x = a.mag.x;
     d->magnetic_field.y = a.mag.y;
@@ -58,13 +61,13 @@ int main( int argc, char *argv[]){
         tag.recv_upd();
         msg_pose.header.seq = count++;
         msg_conv( tag.pose, &msg_pose, &msg_accel, &msg_mag );
-        dt = msg_pose.header.stamp - timestamp_prev;
-        cout << dt << endl;
+        dt = msg_pose.header.stamp.toSec() - timestamp_prev.toSec();
         est.update( dt,
                     msg_accel.accel.angular.x, msg_accel.accel.angular.y, msg_accel.accel.angular.z,
                     msg_accel.accel.linear.x, msg_accel.accel.linear.y, msg_accel.accel.linear.z,
                     msg_mag.magnetic_field.x, msg_mag.magnetic_field.y, msg_mag.magnetic_field.z );
-        est.getAttitude( &q, &msg_pose );
+        est.getAttitude( q );
+        upd_quaterion( q, &msg_pose );
         pose_pub.publish(msg_pose);
         accel_pub.publish(msg_accel);
         mag_pub.publish(msg_mag);

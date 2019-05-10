@@ -4,8 +4,10 @@ project(uniseq_pose)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
+  std_msgs
   roscpp
   rospy
+  tf
 )
 
 catkin_package(
@@ -35,3 +37,12 @@ target_link_libraries( uniseq_pose ${catkin_LIBRARIES} )
 
 add_executable( uniseq_listen src/uniseq_listen.cpp )
 target_link_libraries( uniseq_listen ${catkin_LIBRARIES} )
+
+add_executable( rover_dest src/rover_dest.cpp )
+target_link_libraries( rover_dest ${catkin_LIBRARIES} )
+
+add_executable( rover_ark_ctrl src/rover_ark_ctrl.cpp )
+target_link_libraries( rover_ark_ctrl ${catkin_LIBRARIES} )
+
+add_executable( rover_dest_ctrl src/rover_dest_ctrl.cpp )
+target_link_libraries( rover_dest_ctrl ${catkin_LIBRARIES} )

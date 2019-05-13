@@ -90,6 +90,11 @@ int Network::recv_msg(){
 
 //Sequitur class definition
 
+Sequitur::Sequitur(){
+    seq = this;
+}
+
+
 void Sequitur::compose_msg(){
     hashcode = rand() % 9000 + 1000;
     std::stringstream ss;
@@ -129,9 +134,7 @@ void Sequitur::set_req( int user_code, std::string user_parameters ){
 
 //Forward class definition
 
-Sequitur::ForwardData::ForwardData( Sequitur *foil ){
-    seq = foil;
-    seq->sock_fd;
+Sequitur::ForwardData::ForwardData(){
     seq->set_req( CLIENT_SET_PARAMETER, "positionforwardenabled 1 1 0" );
     seq->req_once();
     seq->set_req( CLIENT_POSITION_FORWARD );
@@ -163,8 +166,7 @@ void Sequitur::ForwardData::decompose_msg(){
 
 //Set boundaries class definition
 
-Sequitur::SetAnchorLocation::SetAnchorLocation( Network *net ){
-    sock_fd = net->sock_fd;
+Sequitur::SetAnchorLocation::SetAnchorLocation(){
     parameters[0] = "1 1 10205F1310000DE1 2.439 -2.231 0.695";
     parameters[1] = "2 1 10205F1310001423 2.631 2.544 2.145";
     parameters[2] = "3 1 10205F1310001422 -1.856 -2.247 2.095";
@@ -183,7 +185,7 @@ void Sequitur::SetAnchorLocation::set_loc(){
     for( int i = 0; i < 4; i++ ){
         seq->set_req( CLIENT_SET_ANCHOR_INFO, parameters[i] );
         seq->req_once();
-        if( result != 0 ){
+        if( seq->result != 0 ){
             i--;
         } else {
             std::cout << "Board #" << i+1 << " is set.\n";

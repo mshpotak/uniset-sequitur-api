@@ -56,10 +56,10 @@ struct pose_with_imu{
 
 class Network{
     private:
-        Network();
         int connect_to( const char ip[], const char port[], int family = AF_INET, int socktype = SOCK_DGRAM, int flags = AI_PASSIVE );
-        ~Network();
     protected:
+        Network();
+        ~Network();
         int result;
         char buffer[BUFF_SIZE];
     public:
@@ -71,7 +71,7 @@ class Network{
 
 class Sequitur: public Network{
     private:
-        Sequitur *seq = this;
+        static Sequitur *seq;
     protected:
         Sequitur();
         ~Sequitur();

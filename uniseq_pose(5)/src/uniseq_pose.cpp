@@ -44,9 +44,7 @@ int main( int argc, char *argv[]){
     ros::Publisher accel_pub = hand.advertise<geometry_msgs::AccelStamped>("sequitur_accel",1000);
     ros::Publisher mag_pub = hand.advertise<sensor_msgs::MagneticField>("sequitur_mag",1000);
     int count = 0;
-    Network net;
-    BoundBox box( &net );
-    Forward tag( &net );
+    Sequitur seq;
     AttitudeEstimator est;
     geometry_msgs::PoseStamped msg_pose;
     geometry_msgs::AccelStamped msg_accel;
@@ -54,15 +52,15 @@ int main( int argc, char *argv[]){
     double q[4];
     double dt = 0;
 
-    tag.recv_upd();
-    msg_conv( tag.pose, &msg_pose, &msg_accel, &msg_mag );
+    seq.tag.recv_upd();
+    msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );
     ros::Time timestamp_prev = msg_pose.header.stamp;
 
     while( ros::ok() ){
 
-        tag.recv_upd();
+        seq.tag.recv_upd();
         msg_pose.header.seq = count++;
-        msg_conv( tag.pose, &msg_pose, &msg_accel, &msg_mag );
+        msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );
         dt = msg_pose.header.stamp.toSec() - timestamp_prev.toSec();
         est.update( dt,
                     msg_accel.accel.angular.x, msg_accel.accel.angular.y, msg_accel.accel.angular.z,

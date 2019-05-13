@@ -163,7 +163,7 @@ void Sequitur::ForwardData::decompose_msg(){
 
 //Set boundaries class definition
 
-BoundBox::BoundBox( Network *net ){
+Sequitur::SetAnchorLocation::SetAnchorLocation( Network *net ){
     sock_fd = net->sock_fd;
     parameters[0] = "1 1 10205F1310000DE1 2.439 -2.231 0.695";
     parameters[1] = "2 1 10205F1310001423 2.631 2.544 2.145";
@@ -172,17 +172,17 @@ BoundBox::BoundBox( Network *net ){
     set_loc();
 }
 
-void BoundBox::decompose_msg(){
-    Sequitur::decompose_msg();
+void Sequitur::SetAnchorLocation::decompose_msg(){
+    seq->decompose_msg();
     std::stringstream ss;
-    ss << msg;
-    ss >> result >> result;
+    ss << seq->msg;
+    ss >> seq->result >> seq->result;
 }
 
-void BoundBox::set_loc(){
+void Sequitur::SetAnchorLocation::set_loc(){
     for( int i = 0; i < 4; i++ ){
-        set_req( CLIENT_SET_ANCHOR_INFO, parameters[i] );
-        req_once();
+        seq->set_req( CLIENT_SET_ANCHOR_INFO, parameters[i] );
+        seq->req_once();
         if( result != 0 ){
             i--;
         } else {

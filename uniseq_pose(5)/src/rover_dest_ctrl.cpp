@@ -124,7 +124,7 @@ struct Vector{
         angle(){
             Point2D i( 1, 0 );
             Point2D vect = vect_to - vect_fr;
-            
+
         }
 }
 
@@ -158,7 +158,8 @@ class SubAndPub{
             dist_x = p_fin_pose->pose.position.x - msg->pose.position.x;
             dist_y = p_fin_pose->pose.position.y - msg->pose.position.y;
             norme = sqrt( dist_x*dist_x + dist_y*dist_y );
-            teta = atan2( dist_x, dist_y ) - M_PI/2;
+            teta = atan2( dist_x, dist_y );
+            if( teta < 0 ) teta += M_PI*2;
 
             tf::Quaternion q( msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w );
             tf::Matrix3x3 mat( q );

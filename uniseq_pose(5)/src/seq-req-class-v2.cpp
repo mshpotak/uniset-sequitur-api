@@ -90,10 +90,9 @@ int Network::recv_msg(){
 
 //Sequitur class definition
 
-Sequitur::Sequitur(){
-    seq = this;
-}
+Sequitur::Sequitur(): tag(this), anchor(this){}
 
+Sequitur::~Sequitur(){};
 
 void Sequitur::compose_msg(){
     hashcode = rand() % 9000 + 1000;
@@ -134,7 +133,8 @@ void Sequitur::set_req( int user_code, std::string user_parameters ){
 
 //Forward class definition
 
-Sequitur::ForwardData::ForwardData(){
+Sequitur::ForwardData::ForwardData( Sequitur *owner ){
+    seq = owner;
     seq->set_req( CLIENT_SET_PARAMETER, "positionforwardenabled 1 1 0" );
     seq->req_once();
     seq->set_req( CLIENT_POSITION_FORWARD );
@@ -166,12 +166,12 @@ void Sequitur::ForwardData::decompose_msg(){
 
 //Set boundaries class definition
 
-Sequitur::SetAnchorLocation::SetAnchorLocation(){
+Sequitur::SetAnchorLocation::SetAnchorLocation( Sequitur *owner ){
+    seq = owner;
     parameters[0] = "1 1 10205F1310000DE1 2.439 -2.231 0.695";
     parameters[1] = "2 1 10205F1310001423 2.631 2.544 2.145";
     parameters[2] = "3 1 10205F1310001422 -1.856 -2.247 2.095";
     parameters[3] = "4 1 10205F1310001425 -1.548 2.541 0.705";
-    set_loc();
 }
 
 void Sequitur::SetAnchorLocation::decompose_msg(){

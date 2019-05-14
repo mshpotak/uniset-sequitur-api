@@ -51,7 +51,7 @@ int main( int argc, char *argv[]){
     sensor_msgs::MagneticField msg_mag;
     double q[4];
     double dt = 0;
-
+    seq.anchor.set_loc();
     seq.tag.recv_upd();
     msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );
     ros::Time timestamp_prev = msg_pose.header.stamp;

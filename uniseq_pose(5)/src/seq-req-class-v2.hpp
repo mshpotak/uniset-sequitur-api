@@ -70,16 +70,14 @@ class Network{
 };
 
 class Sequitur: public Network{
-    private:
-        static Sequitur *seq;
     protected:
-        Sequitur();
-        ~Sequitur();
         int req_code;
         std::string req_parameters;
         int hashcode;
         std::string msg;
     public:
+        Sequitur();
+        ~Sequitur();
         void compose_msg();
         virtual void decompose_msg();
         void send_req();
@@ -87,23 +85,27 @@ class Sequitur: public Network{
         void req_once();
         void set_req( int user_code, std::string user_parameters = " " );
         class ForwardData{
+            private:
+                Sequitur *seq;
             public:
                 ForwardData();
+                ForwardData( Sequitur *owner );
                 ~ForwardData();
                 pose_with_imu pose;
                 void decompose_msg();
                 void recv_upd();
         } tag;
-
         class SetAnchorLocation{
+            private:
+                Sequitur *seq;
             public:
                 SetAnchorLocation();
+                SetAnchorLocation( Sequitur *owner );
                 std::string parameters[4];
                 xyz location;
                 void decompose_msg();
                 void set_loc();
         } anchor;
-
 };
 
 #endif

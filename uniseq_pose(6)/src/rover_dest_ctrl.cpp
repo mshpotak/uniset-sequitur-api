@@ -7,6 +7,7 @@
 #include "tf/transform_datatypes.h"
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <math.h>
 
 struct Point2D{
@@ -145,11 +146,15 @@ class RovMoPlan{
         Point2D dest;
         Point2D av_pos;
         Point2D av_mag;
-        double rel_ang;
-        double dest_ang;
+        double pos_ang;
+        double mag_ang;
         double dist;
 
+        ros::NodeHandle hand;
+        ros::Publisher ctrl_pub;
+
         std_msgs::Int8 fwd;
+        std_msgs::Int8 bwd;
         std_msgs::Int8 stop;
         std_msgs::Int8 left;
         std_msgs::Int8 right;
@@ -165,30 +170,39 @@ class RovMoPlan{
         }
 
     public:
-        RoverMoPlan(){
+        RovMoPlan(){
+            ctrl_pub = hand.advertise<std_msgs::Int8>( "rover_command", 200 );
             fwd.data = 1;
+            bwd.data = 2;
             stop.data = 0;
             right.data = 4;
             left.data = 3;
             reset();
-        };
-        int act( const double *x, const double *y ){
-            dest.x = x;
-            dest.y = y;
-            if( db_vect > 50 && db_vers > 50 ){
+        }
+
+        int acquire_pos(){
+            if( db_vect > 50 && db_vers > 50 ) {
+                process();
+                return 1;
+            }
+            return 0;
+        }
+
+        void act(){
+            if( acquire_pos() == 1 ){
                 rotate();
                 go();
                 reset();
-                return 0;
-            } else
-                return ++act_pending;
+            }
         }
-        void process( geometry_msgs::PoseStamped::ConstPtr& msg ){
+
+        //void process( geometry_msgs::AccelStamped::ConstPtr& msg ){}
+        void process( const geometry_msgs::PoseStamped::ConstPtr& msg ){
             av_pos.x += msg->pose.position.x;
             av_pos.y += msg->pose.position.y;
             db_vect++;
         }
-        void process( sensor_msgs::MagneticField::ConstPtr& msg ){
+        void process( const sensor_msgs::MagneticField::ConstPtr& msg ){
             av_mag.x += msg->magnetic_field.x;
             av_mag.y += msg->magnetic_field.y;
             db_vers++;
@@ -198,91 +212,108 @@ class RovMoPlan{
             av_pos.y /= db_vect;
             av_mag.x /= db_vers;
             av_mag.y /= db_vers;
-            rel_ang = atan2( av_mag.y, av_mag.x );
-            dest_ang = atan2( av_pos.y, av_pos.x );
+            mag_ang = atan2( av_mag.y, av_mag.x );
+            pos_ang = atan2( av_pos.y, av_pos.x );
             dist = sqrt( av_pos.x*av_pos.x + av_pos.y*av_pos.y );
-
             //if( av_ang < 0 ) av_ang += 2*M_PI;
         }
-        //void process( geometry_msgs::AccelStamped::ConstPtr& msg ){}
+
         void rotate(){
             //printf("Yaw is: %f\n", yaw);
-            if( av_ang > 0 ){
-                if( yaw > teta + 0.15 ) {
-                    ctrl_pub.publish( left );
-                }else if( yaw < teta - 0.15 ) {
-                    ctrl_pub.publish( right );
-            }
-        };
+            // if( av_ang > 0 ){
+            //     if( yaw > teta + 0.15 ) {
+            //         ctrl_pub.publish( left );
+            //     }else if( yaw < teta - 0.15 ) {
+            //         ctrl_pub.publish( right );
+            //     }
+            // }
+        }
+
         void go(){
+            // actual_pose = *msg;
+            //
+            // dist_x = p_fin_pose->pose.position.x - msg->pose.position.x;
+            // dist_y = p_fin_pose->pose.position.y - msg->pose.position.y;
+            // if( dist_x == 0 && dist_y == 0 ){
+            //     ctrl_pub.publish( stop );
+            // }else if ( grid_obj.if_in( &msg->pose.position.x, &msg->pose.position.y, &grid_obj.brd ) == 0) {
+            //     ctrl_pub.publish( stop );
+            //     printf("Out of bounds.\n");
+            // }else if ( grid_obj.if_in( &msg->pose.position.x, &msg->pose.position.y, &grid_obj.fin ) == 1 ) {
+            //     ctrl_pub.publish( stop );
+            //     printf("Destination reached.\n");
+            // }else if( norme > 0.1 ){
+            //     ctrl_pub.publish( fwd );
+            // }else {
+            //     ctrl_pub.publish( stop );
+            // }
+        }
 
+        void set_dest( const double *x, const double *y ){
+            dest.x = *x;
+            dest.y = *y;
+            act_pending++;
+        }
+        Point2D v1_pos, v2_pos;
+        double v1_pos_ang, v1_mag_ang;
+        double v2_pos_ang, v2_mag_ang;
+        double dif_ang, fix_ang;
+        bool v1 = false, v2 = false;
 
-            //printf("Control set...\n");
-            actual_pose = *msg;
-            //printf("Finish grid set...\n");
+        void ref_fr_calib(){
+            //printf("Reference frame calibration started...\n");
+            if( v1 == false ){
+                if( acquire_pos() == 1 ){
+                    printf("First point:\n");
+                    v1_pos_ang = pos_ang;
+                    if( pos_ang < 0 ) v1_pos_ang += 2*M_PI;
+                    v1_mag_ang = mag_ang;
+                    if( mag_ang < 0 ) v1_mag_ang += 2*M_PI;
+                    v1_pos = av_pos;
+                    v1 = true;
+                    printf("Positions: %d, Angles: %d, AvPos: x_%f y_%f\n", db_vect, db_vers, av_pos.x, av_pos.y);
+                    printf( "pos_ang: %f\tmag ang: %f\t diff: %f\n", v1_pos_ang*180/M_PI, v1_mag_ang*180/M_PI, (v1_pos_ang - v1_mag_ang)*180/M_PI );
 
-            dist_x = p_fin_pose->pose.position.x - msg->pose.position.x;
-            dist_y = p_fin_pose->pose.position.y - msg->pose.position.y;
-            if( dist_x == 0 && dist_y == 0 ){
-                ctrl_pub.publish( stop );
-            }else if ( grid_obj.if_in( &msg->pose.position.x, &msg->pose.position.y, &grid_obj.brd ) == 0) {
-                ctrl_pub.publish( stop );
-                printf("Out of bounds.\n");
-            }else if ( grid_obj.if_in( &msg->pose.position.x, &msg->pose.position.y, &grid_obj.fin ) == 1 ) {
-                ctrl_pub.publish( stop );
-                printf("Destination reached.\n");
-            }else {
-                norme = sqrt( dist_x*dist_x + dist_y*dist_y );
-                teta = atan2( dist_x, dist_y );
-                if( teta < 0 ) teta += 2*M_PI;
-                printf("Teta: %f\t Yaw: %f\n", teta, yaw);
-
-
-
-                }else if( norme > 0.1 ){
                     ctrl_pub.publish( fwd );
-                } else {
+                    usleep( 500000 );
                     ctrl_pub.publish( stop );
-                }
-            }
+                    reset();
+                    return;
+                } else return;
+            } else{
+                if( acquire_pos() == 1 ){
+                    printf("Second point:\n");
+                    v2_pos_ang = pos_ang;
+                    if( pos_ang < 0 ) v2_pos_ang += 2*M_PI;
+                    v2_mag_ang = mag_ang;
+                    if( mag_ang < 0 ) v2_mag_ang += 2*M_PI;
+                    v2_pos = av_pos;
+                    printf("Positions: %d, Angles: %d, AvPos: x_%f y_%f\n", db_vect, db_vers, av_pos.x, av_pos.y);
+                    printf("pos_ang: %f\tmag ang: %f\t diff: %f\n", v2_pos_ang*180/M_PI, v2_mag_ang*180/M_PI, (v2_pos_ang - v2_mag_ang)*180/M_PI );
 
-        };
+                    dif_ang = atan2( v2_pos.y - v1_pos.y, v2_pos.x - v1_pos.x );
+                    if( dif_ang < 0 ) dif_ang += 2*M_PI;
+
+                    printf("Differece:\n");
+                    printf("dif_ang: %f\n", dif_ang*180/M_PI);
+
+                    fix_ang = dif_ang - v2_mag_ang;
+                    printf("mag in pos frame ang: %f\n", fix_ang*180/M_PI);
+
+                    ctrl_pub.publish( bwd );
+                    usleep( 500000  );
+                    ctrl_pub.publish( stop );
+                    reset();
+                } else return;
+            }
+            printf("Reference frame calibration succesfull.\n\n");
+            v1 = false;
+        }
 };
 
 class SubAndPub{
-    public:
-        SubAndPub(){
-            ctrl_pub = hand.advertise<std_msgs::Int8>( "rover_command", 200 );
-            pose_sub = hand.subscribe( "sequitur_pose", 200, &SubAndPub::seqCallback, this );
-            mag_sub = hand.subscribe("sequitur_mag", 200, &SubAndPub::magCallback, this );
-            //accel_sub = hand.subscribe("sequitur_accel", 200, &SubAndPub::accelCallback, this );
-            ctrl_sub = hand.subscribe( "rover_destination", 200, &SubAndPub::destCallback, this);
-            grid_obj.make_grid( 5, 6);
-            printf("SubAndPub initialized...\n");
-            p_fin_pose = &actual_pose;
-            grid_obj.fin_grid( p_fin_pose->pose.position.x, p_fin_pose->pose.position.y );
-        }
-
-        void seqCallback( const geometry_msgs::PoseStamped::ConstPtr& msg ){
-            rover.process( msg );
-        }
-
-        void magCallback( const sensor_msgs::MagneticField::ConstPtr& msg ){
-            rover.process( msg );
-        }
-
-
-        void destCallback( const geometry_msgs::PoseStamped::ConstPtr& msg ){
-            fin_pose = *msg;
-            p_fin_pose = &fin_pose;
-            grid_obj.fin_grid( p_fin_pose->pose.position.x, p_fin_pose->pose.position.y );
-            rover.act();
-        }
-
-
     private:
         ros::NodeHandle hand;
-        ros::Publisher ctrl_pub;
         ros::Subscriber pose_sub;
         ros::Subscriber ctrl_sub;
         ros::Subscriber mag_sub;
@@ -297,10 +328,39 @@ class SubAndPub{
         double teta;
         double yaw;
         Grid grid_obj;
+
+    public:
+        SubAndPub(){
+            pose_sub = hand.subscribe( "sequitur_pose", 200, &SubAndPub::seqCallback, this );
+            mag_sub = hand.subscribe( "sequitur_mag", 200, &SubAndPub::magCallback, this );
+            //accel_sub = hand.subscribe("sequitur_accel", 200, &SubAndPub::accelCallback, this );
+            ctrl_sub = hand.subscribe( "rover_destination", 200, &SubAndPub::destCallback, this);
+            grid_obj.make_grid( 5, 6);
+            p_fin_pose = &actual_pose;
+            grid_obj.fin_grid( p_fin_pose->pose.position.x, p_fin_pose->pose.position.y );
+
+            printf("SubAndPub initialized...\n");
+        }
+
+        void seqCallback( const geometry_msgs::PoseStamped::ConstPtr& msg ){
+            rover.process( msg );
+            rover.ref_fr_calib();
+        }
+
+        void magCallback( const sensor_msgs::MagneticField::ConstPtr& msg ){
+            rover.process( msg );
+        }
+
+        void destCallback( const geometry_msgs::PoseStamped::ConstPtr& msg ){
+            fin_pose = *msg;
+            p_fin_pose = &fin_pose;
+            grid_obj.fin_grid( p_fin_pose->pose.position.x, p_fin_pose->pose.position.y );
+            rover.set_dest( &msg->pose.position.x, &msg->pose.position.y );
+        }
 };
 
 int main( int argc, char *argv[] ){
-    ros::init( argc, argv, "rover_ark_ctrl" );
+    ros::init( argc, argv, "rover_dest_ctrl" );
     SubAndPub ark_obj;
     ros::spin();
     return 0;

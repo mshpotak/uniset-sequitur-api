@@ -90,7 +90,7 @@ int Network::recv_msg(){
 
 //Sequitur class definition
 
-Sequitur::Sequitur(): tag(this), anchor(this), scan(this) {}
+Sequitur::Sequitur(): tag(this), anchor(this), scan(this){}
 
 Sequitur::~Sequitur(){};
 
@@ -206,6 +206,7 @@ void Sequitur::SetAnchorLocation::set_loc(){
 Sequitur::Scan::Scan( Sequitur *owner ){
     seq = owner;
 }
+
 
 void Sequitur::Scan::decompose_msg(){
     std::stringstream ss;

@@ -107,10 +107,10 @@ class Sequitur: public Network{
         } anchor;
         class Scan{
             private:
-                double range;
                 Sequitur *seq;
             public:
                 Scan( Sequitur *owner );
+                double range;
                 void decompose_msg();
                 double get_range( std::string node_id );
         } scan;

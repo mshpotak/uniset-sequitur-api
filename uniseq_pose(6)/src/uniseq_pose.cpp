@@ -52,12 +52,12 @@ int main( int argc, char *argv[]){
     double q[4];
     double dt = 0;
     seq.anchor.set_loc();
+    seq.tag.state(true);
     seq.tag.recv_upd();
     msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );
     ros::Time timestamp_prev = msg_pose.header.stamp;
 
     while( ros::ok() ){
-
         seq.tag.recv_upd();
         msg_pose.header.seq = count++;
         msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );

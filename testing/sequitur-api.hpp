@@ -3,14 +3,13 @@
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <poll.h>
 #include <unistd.h>
 #include <math.h>
 
-#ifndef SEQREQCLASSV2_HPP_
-#define SEQREQCLASSV2_HPP_
+#include "msh-network.hpp"
+
+#ifndef SEQUITURAPI_HPP_
+#define SEQUITURAPI_HPP_
 
 #define CLIENT_PING 0
 #define CLIENT_SET_PARAMETER 3
@@ -23,7 +22,7 @@
 #define CLIENT_GET_TAG_POSITION 14
 #define CLIENT_POSITION_FORWARD 59
 
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 512
 #define PORT_SEQ  "5678"
 
 struct xyz{
@@ -54,66 +53,61 @@ struct pose_with_imu{
     struct xyz mag;
 };
 
-class Network{
+class Sequitur: private Network{
     private:
-        int connect_to( const char ip[], const char port[], int family = AF_INET, int socktype = SOCK_DGRAM, int flags = AI_PASSIVE );
-    protected:
-        Network();
-        ~Network();
-        int result;
-        char buffer[BUFF_SIZE];
-    public:
-        int sock_fd;
-        int send_msg( const char* msg );
-        int recv_msg();
-        int await( int timeout_ms = 1000);
-};
-
-class Sequitur: public Network{
-    protected:
+        int hashcode;
         int req_code;
         std::string req_parameters;
-        int hashcode;
-        std::string msg;
+
+        void set_network();
     public:
         Sequitur();
         ~Sequitur();
+
         void compose_msg();
         virtual void decompose_msg();
         void send_req();
         void recv_resp();
         void req_once();
         void set_req( int user_code, std::string user_parameters = " " );
-        class ForwardData{
-            private:
-                Sequitur *seq;
-            public:
-                ForwardData( Sequitur *owner );
-                ~ForwardData();
-                pose_with_imu pose;
-                void decompose_msg();
-                void state( bool var );
-                void recv_upd();
-        } tag;
-        class SetAnchorLocation{
-            private:
-                Sequitur *seq;
-            public:
-                SetAnchorLocation( Sequitur *owner );
-                std::string parameters[4];
-                xyz location;
-                void decompose_msg();
-                void set_loc();
-        } anchor;
+
         class Scan{
             private:
                 Sequitur *seq;
             public:
                 Scan( Sequitur *owner );
+
                 double range;
-                void decompose_msg();
                 double get_range( std::string node_id );
-        } scan;
+                void decompose_msg();
+        };
+};
+
+class Anchor: public Sequitur{};
+
+class Tag: public Sequitur{
+    class ForwardData{
+        private:
+            Sequitur *seq;
+        public:
+            ForwardData( Sequitur *owner );
+            ~ForwardData();
+
+            pose_with_imu pose;
+            void state( bool var );
+            void recv_upd();
+            void decompose_msg();
+    };
+    class SetAnchorLocation{
+        private:
+            Sequitur *seq;
+        public:
+            SetAnchorLocation( Sequitur *owner );
+            std::string parameters[4];
+
+            void set_default_loc();
+            void decompose_msg();
+    };
 };
 
 #endif

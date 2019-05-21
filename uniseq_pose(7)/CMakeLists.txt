@@ -11,16 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES uniseq_pose
-   CATKIN_DEPENDS message_runtime #geometry_msgs sensor_msgs roscpp rospy
-#  DEPENDS system_lib
-)
-
 add_message_files(
   FILES
-  Sequitur.msg
+  SequiturData.msg
 )
 
 generate_messages(
@@ -28,6 +21,14 @@ generate_messages(
   geometry_msgs
   sensor_msgs
 )
+
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES uniseq_pose
+   CATKIN_DEPENDS message_runtime #geometry_msgs sensor_msgs roscpp rospy
+#  DEPENDS system_lib
+)
+
 
 ###########
 ## Build ##
@@ -44,7 +45,7 @@ include_directories(
 ## Testing ##
 #############
 
-add_executable( uniseq_pose src/uniseq_pose.cpp src/seq-req-class-v2.cpp src/attitude_estimator.cpp)
+add_executable( uniseq_pose src/uniseq_pose.cpp src/sequitur-api.cpp src/msh-network.cpp src/attitude_estimator.cpp)
 target_link_libraries( uniseq_pose ${catkin_LIBRARIES} )
 
 add_executable( uniseq_listen src/uniseq_listen.cpp )

@@ -4,6 +4,7 @@
 #include "geometry_msgs/Point.h"
 #include "sensor_msgs/MagneticField.h"
 #include "geometry_msgs/AccelStamped.h"
+#include "uniseq_pose/SequiturData.h"
 #include "tf/transform_datatypes.h"
 
 #include <stdlib.h>
@@ -260,7 +261,7 @@ class RovMoPlan{
         double dif_ang, fix_ang;
         bool v1 = false, v2 = false;
 
-        void ref_fr_calib(){
+        void reference_frame_calibration(){
             //printf("Reference frame calibration started...\n");
             if( v1 == false ){
                 if( acquire_pos() == 1 ){
@@ -344,7 +345,7 @@ class SubAndPub{
 
         void seqCallback( const geometry_msgs::PoseStamped::ConstPtr& msg ){
             rover.process( msg );
-            rover.ref_fr_calib();
+            rover.reference_frame_calibration();
         }
 
         void magCallback( const sensor_msgs::MagneticField::ConstPtr& msg ){

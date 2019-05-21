@@ -1,3 +1,0 @@
-geometry_msgs/PoseStamped pose
-geometry_msgs/AccelStamped accel
-sensor_msgs/MagneticField magnetic_field

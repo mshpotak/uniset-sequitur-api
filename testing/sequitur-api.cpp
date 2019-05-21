@@ -29,7 +29,6 @@ void Sequitur::compose_msg(){
 }
 
 void Sequitur::decompose_msg(){
-    msg.clear();
     msg.erase( msg.begin() + msg.find('{') );
     msg.erase( msg.begin() + msg.find('}') );
 }
@@ -56,6 +55,10 @@ void Sequitur::set_req( int user_code, std::string user_parameters ){
     req_parameters = user_parameters;
 }
 
+void Sequitur::print_msg(){
+    printf( "%s\n", msg.c_str() );
+}
+
 //Forward class definition
 
 Tag::ForwardData::ForwardData( Sequitur *owner ){
@@ -67,8 +70,8 @@ Tag::ForwardData::~ForwardData(){
     seq->req_once();
 }
 
-void Tag::ForwardData::state( bool var ){
-    if( var == true ){
+void Tag::ForwardData::fwd_state( bool fwd ){
+    if( fwd == true ){
         seq->set_req( CLIENT_SET_PARAMETER, "positionforwardenabled 1 1 0" );
         seq->req_once();
     } else {
@@ -77,9 +80,12 @@ void Tag::ForwardData::state( bool var ){
     }
 }
 
-void Tag::ForwardData::recv_upd(){
+void Tag::ForwardData::recv_upd( bool print ){
     seq->await(0);
     seq->recv_msg();
+    if( print == true ){
+        seq->print_msg();
+    }
     decompose_msg();
 }
 

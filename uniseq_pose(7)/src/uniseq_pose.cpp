@@ -2,7 +2,8 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/AccelStamped.h"
 #include "sensor_msgs/MagneticField.h"
-#include "seq-req-class-v2.hpp"
+#include "uniseq_pose/SequiturData.h"
+#include "sequitur-api.hpp"
 #include "attitude_estimator.h"
 #include <math.h>
 
@@ -40,27 +41,33 @@ void upd_quaterion( double *a, geometry_msgs::PoseStamped *b){
 int main( int argc, char *argv[]){
     ros::init( argc, argv, "uniseq_pose");
     ros::NodeHandle hand;
+    ros::Publisher sequitur_pub = hand.advertise<uniseq_pose::SequiturData>("sequitur_data",1000);
     ros::Publisher pose_pub = hand.advertise<geometry_msgs::PoseStamped>("sequitur_pose",1000);
     ros::Publisher accel_pub = hand.advertise<geometry_msgs::AccelStamped>("sequitur_accel",1000);
     ros::Publisher mag_pub = hand.advertise<sensor_msgs::MagneticField>("sequitur_mag",1000);
     int count = 0;
-    Sequitur seq;
+    Tag tag0;
+    Tag::ForwardData tag0f0 = &tag0;
+    Tag::SetAnchorLocation tag0f1 = &tag0;
     AttitudeEstimator est;
+    uniseq_pose::SequiturData msg_seq;
     geometry_msgs::PoseStamped msg_pose;
     geometry_msgs::AccelStamped msg_accel;
     sensor_msgs::MagneticField msg_mag;
-    double q[4];
+    double q[4] = {0};
     double dt = 0;
-    seq.anchor.set_loc();
-    seq.tag.state(true);
-    seq.tag.recv_upd();
-    msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );
+    tag0f1.set_default_loc();
+    tag0f0.fwd_state( true );
+    tag0f0.recv_upd();
+    msg_conv( tag0f0.pose, &msg_pose, &msg_accel, &msg_mag );
     ros::Time timestamp_prev = msg_pose.header.stamp;
 
+
     while( ros::ok() ){
-        seq.tag.recv_upd();
+        tag0f0.recv_upd();
         msg_pose.header.seq = count++;
-        msg_conv( seq.tag.pose, &msg_pose, &msg_accel, &msg_mag );
+        msg_conv( tag0f0.pose, &msg_pose, &msg_accel, &msg_mag );
+
         dt = msg_pose.header.stamp.toSec() - timestamp_prev.toSec();
         est.update( dt,
                     msg_accel.accel.angular.x, msg_accel.accel.angular.y, msg_accel.accel.angular.z,
@@ -68,6 +75,13 @@ int main( int argc, char *argv[]){
                     msg_mag.magnetic_field.x, msg_mag.magnetic_field.y, msg_mag.magnetic_field.z );
         est.getAttitude( q );
         upd_quaterion( q, &msg_pose );
+
+        msg_seq.header = msg_pose.header;
+        msg_seq.pose = msg_pose.pose;
+        msg_seq.accel = msg_accel.accel;
+        msg_seq.magnetic_field = msg_mag.magnetic_field;
+
+        sequitur_pub.publish(msg_seq);
         pose_pub.publish(msg_pose);
         accel_pub.publish(msg_accel);
         mag_pub.publish(msg_mag);

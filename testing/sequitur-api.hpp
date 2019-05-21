@@ -22,7 +22,6 @@
 #define CLIENT_GET_TAG_POSITION 14
 #define CLIENT_POSITION_FORWARD 59
 
-#define BUFF_SIZE 512
 #define PORT_SEQ  "5678"
 
 struct xyz{
@@ -53,7 +52,7 @@ struct pose_with_imu{
     struct xyz mag;
 };
 
-class Sequitur: private Network{
+class Sequitur: public Network{
     private:
         int hashcode;
         int req_code;
@@ -70,6 +69,7 @@ class Sequitur: private Network{
         void recv_resp();
         void req_once();
         void set_req( int user_code, std::string user_parameters = " " );
+        void print_msg();
 
         class Scan{
             private:
@@ -86,28 +86,29 @@ class Sequitur: private Network{
 class Anchor: public Sequitur{};
 
 class Tag: public Sequitur{
-    class ForwardData{
-        private:
-            Sequitur *seq;
-        public:
-            ForwardData( Sequitur *owner );
-            ~ForwardData();
+    public:
+        class ForwardData{
+            private:
+                Sequitur *seq;
+            public:
+                ForwardData( Sequitur *owner );
+                ~ForwardData();
 
-            pose_with_imu pose;
-            void state( bool var );
-            void recv_upd();
-            void decompose_msg();
-    };
-    class SetAnchorLocation{
-        private:
-            Sequitur *seq;
-        public:
-            SetAnchorLocation( Sequitur *owner );
-            std::string parameters[4];
+                pose_with_imu pose;
+                void fwd_state( bool fwd );
+                void recv_upd( bool print = false );
+                void decompose_msg();
+        };
+        class SetAnchorLocation{
+            private:
+                Sequitur *seq;
+            public:
+                SetAnchorLocation( Sequitur *owner );
+                std::string parameters[4];
 
-            void set_default_loc();
-            void decompose_msg();
-    };
+                void set_default_loc();
+                void decompose_msg();
+        };
 };
 
 #endif

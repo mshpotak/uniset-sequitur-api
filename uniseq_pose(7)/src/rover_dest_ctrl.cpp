@@ -258,7 +258,7 @@ class RovMoPlan{
         Point2D v1_pos, v2_pos;
         double v1_pos_ang, v1_mag_ang;
         double v2_pos_ang, v2_mag_ang;
-        double dif_ang, fix_ang;
+        double dif_ang, fix_ang = 1;
         bool v1 = false, v2 = false;
 
         void reference_frame_calibration(){
@@ -273,8 +273,7 @@ class RovMoPlan{
                     v1_pos = av_pos;
                     v1 = true;
                     printf("Positions: %d, Angles: %d, AvPos: x_%f y_%f\n", db_vect, db_vers, av_pos.x, av_pos.y);
-                    printf( "pos_ang: %f\tmag ang: %f\t diff: %f\n", v1_pos_ang*180/M_PI, v1_mag_ang*180/M_PI, (v1_pos_ang - v1_mag_ang)*180/M_PI );
-
+                    printf( "pos_ang: %f\tmag ang: %f\t diff: %f\n", v1_pos_ang*180/M_PI, (v1_mag_ang*180/M_PI)*fix_ang, (v1_pos_ang - v1_mag_ang)*180/M_PI );
                     ctrl_pub.publish( fwd );
                     usleep( 500000 );
                     ctrl_pub.publish( stop );
@@ -298,8 +297,8 @@ class RovMoPlan{
                     printf("Differece:\n");
                     printf("dif_ang: %f\n", dif_ang*180/M_PI);
 
-                    fix_ang = dif_ang - v2_mag_ang;
-                    printf("mag in pos frame ang: %f\n", fix_ang*180/M_PI);
+                    fix_ang = dif_ang/v2_mag_ang;
+                    printf("mag in pos frame ang: %f\n", fix_ang);
 
                     ctrl_pub.publish( bwd );
                     usleep( 500000  );

@@ -1,8 +1,8 @@
 #include "ros/ros.h"
+#include "sequitur_pose/SequiturData.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/AccelStamped.h"
 #include "sensor_msgs/MagneticField.h"
-#include "sequitur_pose/SequiturData.h"
 #include "sequitur-api.hpp"
 #include <math.h>
 

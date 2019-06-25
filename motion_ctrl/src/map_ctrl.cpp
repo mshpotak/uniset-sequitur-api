@@ -1,8 +1,5 @@
 #include "ros/ros.h"
-#include "sequitur_pose/SequiturData.h"
-#include "motion_ctrl/DriveInfo.h"
 #include "geometry_msgs/Point.h"
-#include "std_msgs/Float32MultiArray.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
@@ -61,18 +58,20 @@ public:
     int parseList( std::string filename, int n_points = 1, int position = 0 ){
         ifs.open( filename.c_str(), std::ifstream::in );
         std::stringstream ss;
-        char data[100];
+        std::string data;
         point point;
 
         ifs.seekg(position);
         for( int i = 0; i < n_points; i++ ){
-            ifs.getline( data, 100 );
+            getline( ifs, data );
             ss << data;
             ss >> point.x >> point.y >> point.z;
-            ss.flush();
-            memset( data, 0, 100);
+            data.clear();
+            std::stringstream().swap(ss);
             list.push_back(point);
+            std::cout << list[i] << "\n";
         }
+
         position = ifs.tellg();
         ifs.close();
         return position;

@@ -1,0 +1,61 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(uniseq_pose)
+
+find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+  roscpp
+  rospy
+  tf
+)
+
+add_message_files(
+  FILES
+  SequiturData.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  sensor_msgs
+)
+
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES uniseq_pose
+   CATKIN_DEPENDS message_runtime #geometry_msgs sensor_msgs roscpp rospy
+#  DEPENDS system_lib
+)
+
+
+###########
+## Build ##
+###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
+
+#############
+## Testing ##
+#############
+
+add_executable( uniseq_pose src/uniseq_pose.cpp src/sequitur-api.cpp src/msh-network.cpp src/attitude_estimator.cpp)
+target_link_libraries( uniseq_pose ${catkin_LIBRARIES} )
+
+add_executable( uniseq_listen src/uniseq_listen.cpp )
+target_link_libraries( uniseq_listen ${catkin_LIBRARIES} )
+
+add_executable( rover_dest src/rover_dest.cpp )
+target_link_libraries( rover_dest ${catkin_LIBRARIES} )
+
+add_executable( rover_ark_ctrl src/rover_ark_ctrl.cpp )
+target_link_libraries( rover_ark_ctrl ${catkin_LIBRARIES} )
+
+add_executable( rover_dest_ctrl src/rover_dest_ctrl.cpp )
+target_link_libraries( rover_dest_ctrl ${catkin_LIBRARIES} )

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
@@ -12,9 +13,15 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
+=======
+>>>>>>> 9c87d3a1626395d62451eadc73e1054630850a8e
 
-using namespace std;
+#include "sequitur-api.hpp"
+#include <math.h>
+#include <chrono>
+#include <ctime>
 
+<<<<<<< HEAD
 int main()
 {
     int result;
@@ -52,5 +59,24 @@ int main()
 
 
     freeifaddrs( ifs );
+=======
+int main( int argc, char *argv[]){
+    printf("Start...\n");
+    Sequitur seq;
+    std::chrono::system_clock::time_point start, end;
+    std::chrono::duration<double> t_cycle;
+    unsigned int i = 1;
+    double t_sum = 0, range_avg = 0;
+    while(1){
+        start = std::chrono::system_clock::now();
+        seq.scan.get_range("10205F1310001425");
+        end = std::chrono::system_clock::now();
+        t_cycle = end-start;
+        range_avg += seq.scan.range;
+        t_sum += t_cycle.count();
+        printf("Range: %f, Range avg: %f, \tTime: %f,\t Frequency: %f\n", seq.scan.range, range_avg/i, t_cycle.count(), 1/(t_sum/i) );
+        i++;
+    }
+>>>>>>> 9c87d3a1626395d62451eadc73e1054630850a8e
     return 0;
 }

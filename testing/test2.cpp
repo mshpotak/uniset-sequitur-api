@@ -1,3 +1,4 @@
+#include "sequitur-api.hpp"
 #include <iostream>
 #include <stdlib.h>
 #include <string>
@@ -5,6 +6,7 @@
 
 using namespace std;
 
+<<<<<<< HEAD
 //char buffer[1024];
 
 int main(int argc, const char* argv[])
@@ -14,5 +16,15 @@ int main(int argc, const char* argv[])
     string buff = str;
     cout << buff << endl;
 
+=======
+int main(int argc, const char* argv[])
+{
+    Tag id0;
+    Tag::ForwardData fun0( &id0 );
+    fun0.fwd_state( true );
+    while(1){
+        fun0.recv_upd( true );
+    }
+>>>>>>> 9c87d3a1626395d62451eadc73e1054630850a8e
     return 0;
 }

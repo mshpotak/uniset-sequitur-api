@@ -10,7 +10,6 @@
 #include <sstream>
 #include <fstream>
 
-
 typedef geometry_msgs::Point point;
 
 bool fexists( std::string fname ){
@@ -22,10 +21,10 @@ class MapControl{
 private:
     ros::NodeHandle hand;
     ros::Publisher waypoint_pub;
-    std::ifstream ifs;
     std::vector<point> list;
     point ltop, lbot;
     point rtop, rbot;
+    point bound1, bound2;
 
 public:
     MapControl(){
@@ -42,10 +41,18 @@ public:
             setDefaultMap();
             std::cout << "Setting default map settings...\n";
         }
-        std::cout << "LEFT BOT: "  << lbot.x << " " << lbot.y << " " << lbot.z << "\n";
-        std::cout << "LEFT TOP: "  << ltop.x << " " << ltop.y << " " << ltop.z << "\n";
-        std::cout << "RIGHT BOT: " << rbot.x << " " << rbot.y << " " << rbot.z << "\n";
-        std::cout << "RIGHT TOP: " << rtop.x << " " << rtop.y << " " << rtop.z << "\n";
+        printPoint( "LEFT BOT", lbot );
+        printPoint( "LEFT TOP", ltop );
+        printPoint( "RIGHT BOT", rbot );
+        printPoint( "RIGHT TOP", rtop );
+
+        float safe_coef = 0.8;
+        std::cout << "\nSetting boundaries...\n";
+        std::cout << "Safe coefficient: [" << safe_coef << "]...\n";
+        setBoundaries( safe_coef );
+        printPoint( "BOT ", bound1 );
+        printPoint( "TOP ", bound2 );
+        std::cout << "Box size: X[ " << bound2.x-bound1.x << " ] Y[ " << bound2.y-bound1.y << " ]\n";
     }
 
     void setDefaultMap(){
@@ -56,7 +63,7 @@ public:
     }
 
     int parseList( std::string filename, int n_points = 1, int position = 0 ){
-        ifs.open( filename.c_str(), std::ifstream::in );
+        std::ifstream ifs( filename.c_str(), std::ifstream::in );
         std::stringstream ss;
         std::string data;
         point point;
@@ -76,6 +83,47 @@ public:
         ifs.close();
         return position;
     }
+
+    void setBoundaries( float safe_coef ){
+        bound1.x = safe_coef*(lbot.x + ltop.x)/2;
+        bound1.y = safe_coef*(lbot.y + rbot.y)/2;
+        bound1.z = safe_coef*(ltop.z + rbot.z)/2;
+
+        bound2.x = safe_coef*(rtop.x + rbot.x)/2;
+        bound2.y = safe_coef*(rtop.y + ltop.y)/2;
+        bound2.z = safe_coef*(rtop.z + lbot.z)/2;
+    }
+
+    void printPoint( std::string pname, point point ){
+        std::cout << pname << ": "  << point.x << " " << point.y << " " << point.z << "\n";
+    }
+
+    void inputWaypoint(){
+        point point;
+        std::cout << "\nInput next waypoint:\n";
+        std::cout << "x: ";
+        std::cin >> point.x;
+        std::cout << "y: ";
+        std::cin >> point.y;
+        point.z = 0;
+        point = checkBoundaries( &point );
+        waypoint_pub.publish( point );
+    }
+
+    point checkBoundaries( point *point ){
+        if( point->x < bound1.x ){
+            point->x = bound1.x;
+        } else if( point->x > bound2.x){
+            point->x = bound2.x;
+        }
+        if( point->y < bound1.y ){
+            point->y = bound1.y;
+        } else if( point->y > bound2.y){
+            point->y = bound2.y;
+        }
+
+        return *point;
+    }
 };
 
 int main( int argc, char *argv[]){
@@ -83,6 +131,7 @@ int main( int argc, char *argv[]){
     std::cout << "Node started...\n";
     MapControl obj;
     while( ros::ok() ){
+        obj.inputWaypoint();
         ros::spinOnce();
     };
     return 0;

@@ -14,6 +14,8 @@ add_message_files(
   FILES
   DriveInfo.msg
   SequiturData.msg
+  DeadReckoningData.msg
+  SensorProcessingData.msg
   )
 
 generate_messages(
@@ -55,4 +57,19 @@ add_executable(
 target_link_libraries(
     map_ctrl
     ${catkin_LIBRARIES}
+)
+
+add_executable(
+    sensor_processing
+    src/sensor_processing.cpp
+)
+
+target_link_libraries(
+    sensor_processing
+    ${catkin_LIBRARIES}
+)
+
+add_dependencies(
+    sensor_processing
+    sensor_processing_generate_messages_cpp
 )

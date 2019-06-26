@@ -42,6 +42,7 @@ public:
             float distance = calcDistance(msg->pose.position, dest());
             float direction = calcDirection(msg->pose.position, dest());
 
+
             if ( (distance - pos_accuracy) < 0 ) destReached();
             sendCommand( distance, direction );
             sendInfo( distance, direction);
@@ -103,13 +104,13 @@ class SubAndPub{
 private:
     ros::NodeHandle hand;
     MotionControl obj;
-    ros::Subscriber sequitur_sub;
     ros::Subscriber waypoint_sub;
+    ros::Subscriber sensor_processing_sub;
 
 public:
     SubAndPub(){
-        sequitur_sub = hand.subscribe( "sequitur_data", 20, &SubAndPub::dataCallback, this );
-        waypoint_sub = hand.subscribe( "waypoint_data", 1000, &SubAndPub::wayCallback, this );
+        sensor_processing_sub = hand.subscribe( "sensor_processing_data", 20, &SubAndPub::dataCallback, this );
+        waypoint_sub = hand.subscribe( "waypoint_data", 100, &SubAndPub::wayCallback, this );
         std::cout << "SubAndPub initialized...\n";
     }
     void dataCallback( const sequitur_pose::SequiturData::ConstPtr& msg ){

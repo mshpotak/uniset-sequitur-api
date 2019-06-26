@@ -71,33 +71,99 @@ class Stats{
         }
 };
 
+class OffsetAccel{
+    private:
+        float gforce;
+        vector a_offset;
+        bool init;
+    public:
+        OffsetAccel(){
+            gforce = -9.81;
+            init = false;
+        }
+        void initialize( vector* a ){
+            a_offset.x = a->x;
+            a_offset.y = a->y;
+            a_offset.z = gforce - a->z;
+            printPoint( "Accelerometer offset:", a_offset );
+        }
+        void fix( vector* a ){
+            if( init == false ) initialize( a );
+            a->x = a->x - a_offset.x;
+            a->y = a->y - a_offset.y;
+            a->z = a->z - a_offset.z;
+        }
+};
+
+class OffsetGyro{
+    private:
+        vector w_offset;
+        bool init;
+    public:
+        OffsetGyro(){
+            init = false;
+        };
+        void initialize( vector* w ){
+            w_offset = *w;
+            printPoint( "Gyroscope offset:", w_offset );
+        }
+        void fix( vector* w ){
+            if( init == false ) initialize( w );
+            w->x = w->x - w_offset.x;
+            w->y = w->y - w_offset.y;
+            w->z = w->z - w_offset.z;
+        }
+}
+
+void printPoint( std::string pname, auto point ){
+    std::cout << pname << ": "  << point.x << " " << point.y << " " << point.z << "\n";
+}
+
 class DeadReckoning{
     private:
-        float gforce;;
         vector a_old;
         vector w_old;
         double t_old;
+
         vector v;
         double X, Y, Z;
         double roll, pitch, yaw;
         double time;
-        double t0;
 
-        double integrate( double x1, double x2, double t1, double t2 ){
-            return (x2-x1)*(t2-t1);
+        double t0;
+        bool init;
+
+        double calcVelocity( double v0, double a1, double a2, double t1, double t2 ){
+            return v0 + (a2-a1)*(t2-t1);
         }
 
-        vector normilizeVector( vector vector ){
-            double sum = vector.x + vector.y + vector.z;
-            vector.x = vector.x/sum;
-            vector.y = vector.y/sum;
-            vector.z = vector.z/sum;
-            return vector;
+        double calcDisplacement( double d0, double a1, double a2, double t1, double t2 ){
+            return d0 + (a2-a1)*(t2-t1)*(t2-t1)/2;
+        }
+
+        double calcAngle( double ang0, double w1, double w2, double t1, double t2 ){
+            double ang = ang0 + (w2-w1)*(t2-t1);
+
+            if( abs(ang) > 2*M_PI ){
+                int k = ang/(2*M_PI);
+                ang = ang - k*2*M_PI;
+            }
+            if( abs(ang) > M_PI ){
+                ang = ang + copysign(2*M_PI,-ang);
+            }
+
+            return ang;
+        }
+
+        void initialize( vector a, vector w, double t ){
+            a_old = a;
+            w_old = w;
+            t_old = t;
+            t0 = t;
+            init = true;
         }
 
     public:
-        bool init;
-
         DeadReckoning(){
             v.x = 0;
             v.y = 0;
@@ -115,21 +181,14 @@ class DeadReckoning{
             w_old.y = 0;
             w_old.z = 0;
             t_old = 0;
-            gforce = 9.8;
             init = false;
             t0 = 0;
             time = 0;
         }
 
-        void initialize( vector a, vector w, double t ){
-            a_old = a;
-            w_old = w;
-            t_old = t;
-            t0 = t;
-            init = true;
-        }
-
         void update( vector a, vector w, double t ){
+            if( init == false ) initialize( a, w, t );
+
             time = t - t0;
             v.x = calcVelocity( v.x, a_old.x, a.x, t_old, t );
             v.y = calcVelocity( v.y, a_old.y, a.y, t_old, t );
@@ -169,22 +228,6 @@ class DeadReckoning{
             return time;
         }
 
-        double calcVelocity( double v0, double a1, double a2, double t1, double t2 ){
-            return v0 + (a2-a1)*(t2-t1);
-        }
-
-        double calcDisplacement( double d0, double a1, double a2, double t1, double t2 ){
-            return d0 + (a2-a1)*(t2-t1)*(t2-t1)/2;
-        }
-
-        double calcAngle( double ang0, double w1, double w2, double t1, double t2 ){
-            double ang = ang0 + (w2-w1)*(t2-t1);
-            if( (ang > M_PI) || (ang < -M_PI)  ){
-                int k = ang/M_PI;
-                ang = ang - k*M_PI;
-            }
-            return ang;
-        }
 };
 
 class SensorProccesing{
@@ -197,6 +240,10 @@ class SensorProccesing{
         Stats gx, gy, gz;
         Stats mx, my, mz;
         DeadReckoning dr;
+        OffsetAccel offsetAccel;
+        OffsetGyro offsetGyro;
+        vector a, w;
+        double t;
     public:
         SensorProccesing(){
             sensor_processing_pub = hand.advertise<sdata>( "sensor_processing", 100 );
@@ -252,27 +299,25 @@ class SensorProccesing{
         }
 
         void updateDeadReckoning( seqpointer msg ){
-            if( dr.init == false ){
-                dr.initialize( msg->accel.linear, msg->accel.angular, msg->header.stamp.toNSec()*pow(10,-9));
-            } else {
-                dr.update( msg->accel.linear, msg->accel.angular, msg->header.stamp.toNSec()*pow(10,-9) );
-                drdata dr_data;
-                vector v;
-                point d;
-                vector ang;
-                  v = dr.getVelocity();
-                  d = dr.getDisplacement();
-                ang = dr.getAngles();
-                dr_data.velocity = v;
-                dr_data.position = d;
-                dr_data.angle = ang;
-                std::cout << dr.getTime() << "\n";
-                ros::Time stamp(dr.getTime());
-                dr_data.header.stamp = stamp;
+            a = msg->accel.linear;
+            w = msg->accel.angular;
+            t = msg->header.stamp.toNSec()*pow(10,-9);
 
-                dr_pub.publish( dr_data );
-                updateSensorProcessing( msg, dr_data );
-            }
+            offsetAccel.fix( &a );
+            offsetGyro.fix( &w );
+            //sensors.filter( a, w, m, t );
+            dr.update( a, w, t );
+
+            drdata dr_data;
+            ros::Time stamp(dr.getTime());
+
+            dr_data.velocity = dr.getVelocity();
+            dr_data.position = dr.getDisplacement();
+            dr_data.angle = dr.getAngles();
+            dr_data.header.stamp = stamp;
+
+            dr_pub.publish( dr_data );
+            updateSensorProcessing( msg, dr_data );
         }
 
         void updateSensorProcessing( seqpointer msg1, drdata msg2 ){

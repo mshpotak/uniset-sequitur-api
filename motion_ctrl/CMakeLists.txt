@@ -14,6 +14,7 @@ add_message_files(
   FILES
   DriveInfo.msg
   SequiturData.msg
+  IMUStats.msg
   DeadReckoningData.msg
   SensorProcessingData.msg
   )

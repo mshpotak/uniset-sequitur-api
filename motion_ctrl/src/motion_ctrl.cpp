@@ -37,15 +37,15 @@ public:
         sleep = false;
     }
 
-    void updatePose( const sequitur_pose::SequiturData::ConstPtr& msg ){
+    void updatePose( const motion_ctrl::SensorProcessingData::ConstPtr& msg ){
         if( sleep == false ){
-            float distance = calcDistance(msg->pose.position, dest());
-            float direction = calcDirection(msg->pose.position, dest());
-
+            float distance = calcDistance( msg->sequitur.pose.position, &waypoint[N] );
+            float direction = calcDirection( msg->sequitur.pose.position, &waypoint[N] );
+            float orientation = msg->deadreck.angle.z;
 
             if ( (distance - pos_accuracy) < 0 ) destReached();
-            sendCommand( distance, direction );
-            sendInfo( distance, direction);
+            sendCommand( distance, direction, orientation );
+            sendInfo( distance, direction, orientation );
         }
     }
 
@@ -61,13 +61,18 @@ public:
         return atan2(y,x);
     }
 
-    void sendCommand( float direction, float distance ){
+    void sendCommand( float distance, float direction ){
         std_msgs::Float32MultiArray cmd;
         float vel_max = 0.8;
         float slope = 10;
 
-        cmd.data[0] =  direction / M_PI;
+        if( abs( direction - orientation ) > 2*M_PI ){
+            direction = copysign( 2*M_PI, orientation ) + ( direction - orientation);
+        } else {
+            direction = direction - orientation;
+        }
 
+        cmd.data[0] =  direction / M_PI;
         if( ( distance - pos_accuracy) > 0 ){
             cmd.data[1] = vel_max - ( vel_max / pow(slope,(distance-pos_accuracy)) );
         }
@@ -78,10 +83,11 @@ public:
         command_pub.publish( cmd );
     }
 
-    void sendInfo( float direction, float distance ){
+    void sendInfo( float distance, float direction, float orientation ){
         motion_ctrl::DriveInfo info;
         info.direction.data = direction;
         info.distance.data = distance;
+        info.orientation.data = orientation;
         info_pub.publish( info );
     }
 
@@ -92,10 +98,6 @@ public:
         } else {
             sleep = false;
         }
-    }
-
-    geometry_msgs::Point* dest(){
-        return &waypoint[N];
     }
 
 };
@@ -113,7 +115,7 @@ public:
         waypoint_sub = hand.subscribe( "waypoint_data", 100, &SubAndPub::wayCallback, this );
         std::cout << "SubAndPub initialized...\n";
     }
-    void dataCallback( const sequitur_pose::SequiturData::ConstPtr& msg ){
+    void dataCallback( const motion_ctrl::SensorProcessingData::ConstPtr& msg ){
         obj.updatePose( msg );
     }
     void wayCallback( const geometry_msgs::Point::ConstPtr& msg ){

@@ -200,7 +200,6 @@ class Filtering{
         OffsetGyro goff;
     public:
         Filtering(){}
-
         void setThresholds( double ax_std, double ay_std, double az_std,
                             double gx_std, double gy_std, double gz_std,
                             double mx_std, double my_std, double mz_std ){
@@ -222,7 +221,6 @@ class Filtering{
             std::cout << " Magn.std:\nx: " << mx.getTh() << "\ny: " << my.getTh() << "\nz: " << mz.getTh() << "\n";
 
         }
-
         void setOffsets( double gx_mean, double gy_mean, double gz_mean ){
             goff.setOffset( gx_mean, gy_mean, gz_mean );
         }
@@ -250,16 +248,16 @@ class Filtering{
         }
 };
 
-
 class DeadReckoning{
     private:
         vector a_old;
         vector w_old;
         double t_old;
 
-        vector v;
-        double X, Y, Z;
-        double roll, pitch, yaw;
+        vector v, d, ang;
+        double roll_g, pitch_g, yaw_g;
+        double roll_a, pitch_a;
+        double alpha_roll, alpha_pitch;
         double time;
 
         double t0;
@@ -269,13 +267,41 @@ class DeadReckoning{
             return v0 + ((a2+a1)/2)*(t2-t1);
         }
 
-        double calcDisplacement( double d0, double v, double a1, double a2, double t1, double t2 ){
-            return d0 + v*(t2-t1) + ((a2+a1)/2)*(t2-t1)*(t2-t1)/2;
+        double calcDisplacement( double d0, double v0, double a1, double a2, double t1, double t2 ){
+            return d0 + (t2-t1)*( v0 + ((a2+a1)/2)*(t2-t1)/2 );
         }
 
-        double calcAngle( double ang0, double w1, double w2, double t1, double t2 ){
-            double ang = ang0 + ((w2+w1)/2)*(t2-t1);
+        double calcAngleGyro( double ang0, double w1, double w2, double t1, double t2 ){
+            return ang0 + ((w2+w1)/2)*(t2-t1) ;
+        }
 
+        double calcAngleAccel( double hor_axis, double ort_axis, double g_axis ){
+            return atan2( sqrt( ort_axis*ort_axis + g_axis*g_axis ), hor_axis );
+        }
+
+        double complFilter(  double alpha, double g_angle, double a_angle ){
+            return (1 - alpha)*g_angle + alpha*a_angle;
+        }
+
+        void normilizeVector( vector* a ){
+            double sum = sqrt( a->x*a->x + a->y*a->y + a->z*a->z );
+            a->x = a->x / sum;
+            a->y = a->y / sum;
+            a->z = a->z / sum;
+        }
+
+        void resizeNorm( vector* norm, double magnitude ){
+            a_norm->x = a_norm->x * gforce;
+            a_norm->y = a_norm->y * gforce;
+            a_norm->z = a_norm->z * gforce;
+        }
+
+        void correctAccel( vector *a, double gforce = 9.81 ){
+            normilizeVector( a );
+            resizeNorm( a, gforce );
+        }
+
+        double onePiAngle( double ang ){
             if( abs(ang) > 2*M_PI ){
                 int k = ang/(2*M_PI);
                 ang = ang - k*2*M_PI;
@@ -283,7 +309,6 @@ class DeadReckoning{
             if( abs(ang) > M_PI ){
                 ang = ang + copysign(2*M_PI,-ang);
             }
-
             return ang;
         }
 
@@ -322,15 +347,28 @@ class DeadReckoning{
             if( init == false ) initialize( a, w, t );
 
             time = t - t0;
+
+            correctAccel( a );
+
             v.x = calcVelocity( v.x, a_old.x, a.x, t_old, t );
             v.y = calcVelocity( v.y, a_old.y, a.y, t_old, t );
             v.z = calcVelocity( v.z, a_old.z, a.z, t_old, t );
-            X = calcDisplacement( X, v.x, a_old.x, a.x, t_old, t );
-            Y = calcDisplacement( Y, v.y, a_old.y, a.y, t_old, t );
-            Z = calcDisplacement( Z, v.z, a_old.z, a.z, t_old, t );
-            roll  = calcAngle( roll,  w_old.x, w.x, t_old, t );
-            pitch = calcAngle( pitch, w_old.y, w.y, t_old, t );
-            yaw   = calcAngle( yaw,   w_old.z, w.z, t_old, t );
+
+            d.x = calcDisplacement( d.x, v.x, a_old.x, a.x, t_old, t );
+            d.y = calcDisplacement( d.y, v.y, a_old.y, a.y, t_old, t );
+            d.z = calcDisplacement( d.z, v.z, a_old.z, a.z, t_old, t );
+
+            roll_g  = onePiAngle( calcAngleGyro( ang.x, w_old.x, w.x, t_old, t ));
+            pitch_g = onePiAngle( calcAngleGyro( ang.y, w_old.y, w.y, t_old, t ));
+            yaw_g   = onePiAngle( calcAngleGyro( ang.z, w_old.z, w.z, t_old, t ));
+
+            roll_a  = onePiAngle( calcAngleAccel( a.x, a.y, a.z ));
+            pitch_a = onePiAngle( calcAngleAccel( a.y, a.x, a.z ));
+
+            ang.x = complFilter( alpha_roll, roll_g, roll_a );
+            ang.y = complFilter( pitch_alpha, pitch_g, pitch_a );
+            ang.z = yaw_g;
+
             a_old = a;
             w_old = w;
             t_old = t;
@@ -341,18 +379,10 @@ class DeadReckoning{
         }
 
         point getDisplacement(){
-            point d;
-            d.x = X;
-            d.y = Y;
-            d.z = Z;
             return d;
         }
 
         vector getAngles(){
-            vector ang;
-            ang.x = roll;
-            ang.y = pitch;
-            ang.z = yaw;
             return ang;
         }
 

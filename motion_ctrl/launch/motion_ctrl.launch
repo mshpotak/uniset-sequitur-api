@@ -1,0 +1,12 @@
+<launch>
+    <node pkg="motion_ctrl"
+    type="motion_ctrl"
+    name="motion_ctrl"
+    output="screen"/>
+
+    <node pkg="timed_roslaunch"
+    type="timed_roslaunch.sh"
+    args="4 motion_ctrl map_ctrl.launch"
+    name="timed_roslaunch"
+    output="screen"/>
+</launch>

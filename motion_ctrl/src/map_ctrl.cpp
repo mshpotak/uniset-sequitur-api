@@ -53,6 +53,13 @@ public:
         printPoint( "BOT ", bound1 );
         printPoint( "TOP ", bound2 );
         std::cout << "Box size: X[ " << bound2.x-bound1.x << " ] Y[ " << bound2.y-bound1.y << " ]\n";
+        // if( fexists("waymap.csv") ){
+        //     parseList( "waymap.csv", 28 );
+        //     for( int i = 0; i < 28; i++ ){
+        //         waypoint_pub.publish( list[i] );
+        //     }
+        //     std::cout << "Reading 'waymap.csv' file...\n";
+        // }
     }
 
     void setDefaultMap(){
@@ -92,6 +99,10 @@ public:
         bound2.x = safe_coef*(rtop.x + rbot.x)/2;
         bound2.y = safe_coef*(rtop.y + ltop.y)/2;
         bound2.z = safe_coef*(rtop.z + lbot.z)/2;
+
+        std::ofstream ofs( "boundaries.csv", std::ofstream::trunc );
+        ofs << bound1.x << " " << bound1.y << " " << bound2.x << " " << bound2.y << "\0";
+        ofs.close();
     }
 
     void printPoint( std::string pname, point point ){

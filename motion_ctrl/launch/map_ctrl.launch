@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="motion_ctrl"
+    type="map_ctrl" 
+    name="map_ctrl"
+    output="screen"/>
+</launch>

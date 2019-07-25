@@ -1,0 +1,12 @@
+<launch>
+    <node pkg="motion_ctrl"
+    type="sensor_processing"
+    name="sensor_processing"
+    output="screen"/>
+
+    <node pkg="timed_roslaunch"
+    type="timed_roslaunch.sh"
+    args="70 motion_ctrl motion_ctrl.launch"
+    name="timed_roslaunch"
+    output="screen"/>
+</launch>

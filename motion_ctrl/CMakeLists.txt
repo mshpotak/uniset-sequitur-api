@@ -74,3 +74,18 @@ add_dependencies(
     sensor_processing
     sensor_processing_generate_messages_cpp
 )
+
+add_executable(
+    filter_test
+    src/filter_test.cpp
+)
+
+target_link_libraries(
+    filter_test
+    ${catkin_LIBRARIES}
+)
+
+add_dependencies(
+    filter_test
+    filter_test_generate_messages_cpp
+)
